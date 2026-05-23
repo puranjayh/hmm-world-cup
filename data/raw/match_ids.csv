@@ -1,0 +1,334 @@
+competition_id,match_id,match_date,home_team,away_team,home_score,away_score
+43,3857256,2022-12-02,Serbia,Switzerland,2,3
+43,3869151,2022-12-03,Argentina,Australia,2,1
+43,3857257,2022-11-30,Australia,Denmark,1,0
+43,3857258,2022-11-24,Brazil,Serbia,2,0
+43,3857288,2022-11-26,Tunisia,Australia,0,1
+43,3857267,2022-11-29,Ecuador,Senegal,1,2
+43,3869321,2022-12-09,Netherlands,Argentina,2,2
+43,3857287,2022-11-24,Uruguay,South Korea,0,0
+43,3869486,2022-12-10,Morocco,Portugal,1,0
+43,3869685,2022-12-18,Argentina,France,3,3
+43,3857260,2022-11-30,Saudi Arabia,Mexico,1,2
+43,3857264,2022-11-30,Poland,Argentina,0,2
+43,3857266,2022-11-26,France,Denmark,2,1
+43,3857289,2022-11-26,Argentina,Mexico,2,0
+43,3857269,2022-11-28,Brazil,Switzerland,1,0
+43,3857294,2022-11-29,Netherlands,Qatar,2,0
+43,3869254,2022-12-06,Portugal,Switzerland,6,1
+43,3869118,2022-12-04,England,Senegal,3,0
+43,3869684,2022-12-17,Croatia,Morocco,2,1
+43,3869519,2022-12-13,Argentina,Croatia,3,0
+43,3869354,2022-12-10,England,France,1,2
+43,3869552,2022-12-14,France,Morocco,2,0
+43,3869420,2022-12-09,Croatia,Brazil,1,1
+43,3869220,2022-12-06,Morocco,Spain,0,0
+43,3869219,2022-12-05,Japan,Croatia,1,1
+43,3869253,2022-12-05,Brazil,South Korea,4,1
+43,3869152,2022-12-04,France,Poland,3,1
+43,3869117,2022-12-03,Netherlands,United States,3,1
+43,3857270,2022-11-28,Portugal,Uruguay,2,0
+43,3857263,2022-11-27,Spain,Germany,1,1
+43,3857259,2022-11-28,Cameroon,Serbia,3,3
+43,3857295,2022-11-27,Japan,Costa Rica,0,1
+43,3857283,2022-11-27,Belgium,Morocco,0,2
+43,3857284,2022-11-23,Germany,Japan,1,2
+43,3857282,2022-11-21,United States,Wales,1,1
+43,3857286,2022-11-20,Qatar,Ecuador,0,2
+43,3857301,2022-11-25,Qatar,Senegal,1,3
+43,3857300,2022-11-22,Argentina,Saudi Arabia,1,2
+43,3857299,2022-11-28,South Korea,Ghana,2,3
+43,3857298,2022-11-24,Portugal,Ghana,3,2
+43,3857297,2022-11-26,Poland,Saudi Arabia,2,0
+43,3857296,2022-12-01,Croatia,Belgium,0,0
+43,3857293,2022-12-02,Ghana,Uruguay,0,2
+43,3857292,2022-12-01,Costa Rica,Germany,2,4
+43,3857291,2022-11-23,Spain,Costa Rica,7,0
+43,3857290,2022-11-24,Switzerland,Cameroon,1,0
+43,3857285,2022-11-21,Senegal,Netherlands,0,2
+43,3857281,2022-11-27,Croatia,Canada,4,1
+43,3857280,2022-12-02,Cameroon,Brazil,1,0
+43,3857279,2022-11-22,France,Australia,4,1
+43,3857278,2022-11-29,Iran,United States,0,1
+43,3857277,2022-11-23,Morocco,Croatia,0,0
+43,3857276,2022-12-01,Canada,Morocco,1,2
+43,3857275,2022-11-30,Tunisia,France,1,0
+43,3857274,2022-11-25,Netherlands,Ecuador,1,1
+43,3857273,2022-11-25,Wales,Iran,0,2
+43,3857272,2022-11-25,England,United States,0,0
+43,3857271,2022-11-21,England,Iran,6,2
+43,3857268,2022-11-23,Belgium,Canada,1,0
+43,3857265,2022-11-22,Mexico,Poland,0,0
+43,3857262,2022-12-02,South Korea,Portugal,2,1
+43,3857261,2022-11-29,Wales,England,0,3
+43,3857255,2022-12-01,Japan,Spain,2,1
+43,3857254,2022-11-22,Denmark,Tunisia,0,0
+43,3888705,1958-06-29,Brazil,Sweden,5,2
+43,3888704,1958-06-24,Brazil,France,5,2
+43,3888854,1962-05-30,Brazil,Mexico,2,0
+43,3889218,1970-06-14,Brazil,Peru,4,2
+43,3889217,1970-06-10,Brazil,Romania,3,2
+43,3888702,1970-06-21,Brazil,Italy,4,1
+43,3888701,1970-06-18,Brazil,Uruguay,3,1
+43,3888700,1970-06-07,Brazil,England,1,0
+43,3888699,1970-06-04,Brazil,Czechoslovakia,4,1
+43,7585,2018-07-03,Colombia,England,1,1
+43,7570,2018-06-28,England,Belgium,0,1
+43,7586,2018-07-03,Sweden,Switzerland,1,0
+43,7557,2018-06-25,Iran,Portugal,1,1
+43,7542,2018-06-20,Portugal,Morocco,1,0
+43,8656,2018-07-11,Croatia,England,2,1
+43,7554,2018-06-24,England,Panama,6,1
+43,7550,2018-06-22,Serbia,Switzerland,1,2
+43,7548,2018-06-22,Brazil,Costa Rica,2,0
+43,7578,2018-06-15,Egypt,Uruguay,0,1
+43,7553,2018-06-23,South Korea,Mexico,1,2
+43,7544,2018-06-20,Uruguay,Saudi Arabia,1,0
+43,7536,2018-06-18,Belgium,Panama,3,0
+43,7555,2018-06-24,Poland,Colombia,0,3
+43,7546,2018-06-21,France,Peru,1,0
+43,7539,2018-06-19,Poland,Senegal,1,2
+43,7538,2018-06-18,Sweden,South Korea,1,0
+43,7576,2018-06-15,Portugal,Spain,3,3
+43,7565,2018-06-27,Serbia,Brazil,0,2
+43,7551,2018-06-23,Germany,Sweden,2,1
+43,7537,2018-06-18,Tunisia,England,1,2
+43,7580,2018-06-30,France,Argentina,4,3
+43,8650,2018-07-06,Brazil,Belgium,1,2
+43,7581,2018-07-01,Croatia,Denmark,1,1
+43,7549,2018-06-22,Nigeria,Iceland,2,0
+43,7529,2018-06-16,Croatia,Nigeria,2,0
+43,7534,2018-06-17,Germany,Mexico,0,1
+43,7562,2018-06-26,Australia,Peru,0,2
+43,7571,2018-06-28,Senegal,Colombia,0,1
+43,7569,2018-06-28,Panama,Tunisia,1,2
+43,7568,2018-06-27,Switzerland,Costa Rica,2,2
+43,7530,2018-06-16,France,Australia,2,1
+43,7558,2018-06-25,Uruguay,Russia,3,0
+43,7583,2018-07-02,Brazil,Mexico,2,0
+43,7547,2018-06-21,Denmark,Australia,1,1
+43,7535,2018-06-17,Costa Rica,Serbia,0,1
+43,7584,2018-07-02,Belgium,Japan,3,2
+43,7545,2018-06-21,Argentina,Croatia,0,3
+43,8649,2018-07-06,Uruguay,France,0,2
+43,8658,2018-07-15,France,Croatia,4,2
+43,7561,2018-06-26,Iceland,Croatia,1,2
+43,7531,2018-06-16,Argentina,Iceland,1,1
+43,7582,2018-07-01,Spain,Russia,1,1
+43,7552,2018-06-23,Belgium,Tunisia,5,2
+43,7532,2018-06-16,Peru,Denmark,0,1
+43,7560,2018-06-25,Spain,Morocco,2,2
+43,7533,2018-06-17,Brazil,Switzerland,1,1
+43,7564,2018-06-26,Nigeria,Argentina,1,2
+43,7579,2018-06-30,Uruguay,Portugal,2,1
+43,7572,2018-06-28,Japan,Poland,0,1
+43,7577,2018-06-15,Morocco,Iran,0,1
+43,7543,2018-06-20,Iran,Spain,0,1
+43,7525,2018-06-14,Russia,Saudi Arabia,5,0
+43,7566,2018-06-27,Mexico,Sweden,0,3
+43,8651,2018-07-07,Sweden,England,0,2
+43,7567,2018-06-27,South Korea,Germany,2,0
+43,7541,2018-06-19,Colombia,Japan,1,2
+43,8655,2018-07-10,France,Belgium,1,0
+43,8657,2018-07-14,Belgium,England,2,0
+43,7540,2018-06-19,Russia,Egypt,3,1
+43,8652,2018-07-07,Russia,Croatia,2,2
+43,7563,2018-06-26,Denmark,France,0,0
+43,7556,2018-06-24,Japan,Senegal,2,2
+43,7559,2018-06-25,Saudi Arabia,Egypt,2,1
+43,3888720,1974-07-07,Netherlands,Germany,1,2
+43,3888719,1974-07-03,Netherlands,Brazil,2,0
+43,3888718,1974-06-30,German DR,Netherlands,0,2
+43,3888717,1974-06-26,Netherlands,Argentina,4,0
+43,3888716,1974-06-19,Netherlands,Sweden,0,0
+43,3750180,1974-06-22,German DR,Germany,1,0
+43,3889149,1986-06-29,Argentina,Germany,3,2
+43,3889148,1986-06-26,Argentina,Belgium,2,0
+43,3750191,1986-06-22,Argentina,England,2,1
+43,3793185,1990-06-24,Brazil,Argentina,0,1
+55,3942819,2024-07-10,Netherlands,England,1,2
+55,3943043,2024-07-14,Spain,England,2,1
+55,3942752,2024-07-09,Spain,France,2,1
+55,3942382,2024-07-06,Netherlands,Turkey,2,1
+55,3942349,2024-07-05,Portugal,France,0,0
+55,3930180,2024-06-25,Netherlands,Austria,2,3
+55,3930171,2024-06-20,Denmark,England,1,1
+55,3942227,2024-07-06,England,Switzerland,1,1
+55,3942226,2024-07-05,Spain,Germany,2,1
+55,3938645,2024-06-26,Ukraine,Belgium,0,0
+55,3930184,2024-06-26,Czech Republic,Turkey,1,2
+55,3941022,2024-07-02,Austria,Turkey,1,2
+55,3941021,2024-07-02,Romania,Netherlands,0,3
+55,3941020,2024-07-01,Portugal,Slovenia,0,0
+55,3941019,2024-07-01,France,Belgium,1,0
+55,3941018,2024-06-30,Spain,Georgia,4,1
+55,3941017,2024-06-30,England,Slovakia,2,1
+55,3930182,2024-06-25,Denmark,Serbia,0,0
+55,3930179,2024-06-24,Albania,Spain,0,1
+55,3940983,2024-06-29,Germany,Denmark,2,0
+55,3940878,2024-06-29,Switzerland,Italy,2,0
+55,3930177,2024-06-23,Scotland,Hungary,0,1
+55,3930173,2024-06-21,Netherlands,France,0,0
+55,3930172,2024-06-20,Spain,Italy,1,0
+55,3930167,2024-06-19,Croatia,Albania,2,2
+55,3930168,2024-06-19,Germany,Hungary,2,0
+55,3930165,2024-06-17,Austria,France,0,1
+55,3930164,2024-06-17,Belgium,Slovakia,0,1
+55,3930161,2024-06-15,Italy,Albania,2,1
+55,3938637,2024-06-16,Poland,Netherlands,1,2
+55,3938640,2024-06-21,Slovakia,Ukraine,1,2
+55,3938642,2024-06-22,Georgia,Czech Republic,1,1
+55,3938639,2024-06-18,Turkey,Georgia,3,1
+55,3938641,2024-06-21,Poland,Austria,1,3
+55,3938644,2024-06-26,Georgia,Portugal,2,0
+55,3938643,2024-06-25,France,Poland,1,1
+55,3938638,2024-06-17,Romania,Ukraine,3,0
+55,3930183,2024-06-26,Slovakia,Romania,1,1
+55,3930181,2024-06-25,England,Slovenia,0,0
+55,3930178,2024-06-24,Croatia,Italy,1,1
+55,3930176,2024-06-23,Switzerland,Germany,1,1
+55,3930175,2024-06-22,Belgium,Romania,2,0
+55,3930174,2024-06-22,Turkey,Portugal,0,3
+55,3930170,2024-06-20,Slovenia,Serbia,1,1
+55,3930169,2024-06-19,Scotland,Switzerland,1,1
+55,3930166,2024-06-18,Portugal,Czech Republic,2,1
+55,3930163,2024-06-16,Serbia,England,0,1
+55,3930162,2024-06-16,Slovenia,Denmark,1,1
+55,3930160,2024-06-15,Spain,Croatia,3,0
+55,3930159,2024-06-15,Hungary,Switzerland,1,3
+55,3930158,2024-06-14,Germany,Scotland,5,1
+55,3795108,2021-07-02,Switzerland,Spain,1,1
+55,3788769,2021-06-21,Russia,Denmark,1,4
+55,3788766,2021-06-20,Italy,Wales,1,0
+55,3795220,2021-07-06,Italy,Spain,1,1
+55,3788761,2021-06-18,Sweden,Slovakia,1,0
+55,3788764,2021-06-19,Portugal,Germany,2,4
+55,3788773,2021-06-23,Portugal,France,2,2
+55,3788755,2021-06-16,Turkey,Wales,0,2
+55,3788754,2021-06-16,Italy,Switzerland,3,0
+55,3788762,2021-06-19,Spain,Poland,1,1
+55,3788760,2021-06-18,Croatia,Czech Republic,1,1
+55,3788747,2021-06-13,Austria,North Macedonia,3,1
+55,3788741,2021-06-11,Turkey,Italy,0,3
+55,3795109,2021-07-03,Czech Republic,Denmark,1,2
+55,3795187,2021-07-03,Ukraine,England,0,4
+55,3788770,2021-06-21,North Macedonia,Netherlands,0,3
+55,3795506,2021-07-11,Italy,England,1,1
+55,3794688,2021-06-29,England,Germany,2,0
+55,3794692,2021-06-29,Sweden,Ukraine,1,2
+55,3794686,2021-06-28,Croatia,Spain,3,5
+55,3794687,2021-06-27,Belgium,Portugal,1,0
+55,3794685,2021-06-26,Italy,Austria,2,1
+55,3788774,2021-06-23,Germany,Hungary,2,2
+55,3788771,2021-06-22,Croatia,Scotland,3,1
+55,3788772,2021-06-22,Czech Republic,England,0,1
+55,3788768,2021-06-21,Finland,Belgium,0,2
+55,3788767,2021-06-21,Ukraine,Austria,0,1
+55,3788753,2021-06-16,Finland,Russia,0,1
+55,3788765,2021-06-20,Switzerland,Turkey,3,1
+55,3788763,2021-06-19,Hungary,France,1,1
+55,3788759,2021-06-18,England,Scotland,0,0
+55,3788758,2021-06-17,Ukraine,North Macedonia,2,1
+55,3788757,2021-06-17,Denmark,Belgium,1,2
+55,3788745,2021-06-13,England,Croatia,1,0
+55,3795107,2021-07-02,Belgium,Italy,1,2
+55,3795221,2021-07-07,England,Denmark,2,1
+55,3794689,2021-06-26,Wales,Denmark,0,4
+55,3788746,2021-06-13,Netherlands,Ukraine,3,2
+55,3794691,2021-06-28,France,Switzerland,3,3
+55,3794690,2021-06-27,Netherlands,Czech Republic,0,2
+55,3788756,2021-06-17,Netherlands,Austria,2,0
+55,3788749,2021-06-14,Poland,Slovakia,1,2
+55,3788750,2021-06-14,Spain,Sweden,0,0
+55,3788748,2021-06-14,Scotland,Czech Republic,0,2
+55,3788751,2021-06-15,France,Germany,1,0
+55,3788752,2021-06-15,Hungary,Portugal,0,3
+55,3788742,2021-06-12,Denmark,Finland,0,1
+55,3788775,2021-06-23,Slovakia,Spain,0,5
+55,3788776,2021-06-23,Sweden,Poland,3,2
+55,3788743,2021-06-12,Belgium,Russia,3,0
+55,3788744,2021-06-12,Wales,Switzerland,1,1
+223,3943077,2024-07-15,Argentina,Colombia,1,0
+223,3943076,2024-07-14,Canada,Uruguay,2,2
+223,3942852,2024-07-11,Uruguay,Colombia,0,1
+223,3942785,2024-07-10,Argentina,Canada,2,0
+223,3942416,2024-07-07,Colombia,Panama,5,0
+223,3942415,2024-07-07,Uruguay,Brazil,0,0
+223,3939986,2024-06-30,Argentina,Peru,2,0
+223,3939973,2024-06-24,Uruguay,Panama,3,1
+223,3942229,2024-07-06,Venezuela,Canada,1,1
+223,3942228,2024-07-05,Argentina,Ecuador,1,1
+223,3939985,2024-06-30,Canada,Chile,0,0
+223,3939984,2024-06-29,Colombia,Costa Rica,3,0
+223,3939981,2024-06-28,Panama,United States,2,1
+223,3939992,2024-07-03,Costa Rica,Paraguay,2,1
+223,3939991,2024-07-03,Brazil,Colombia,1,1
+223,3939990,2024-07-02,United States,Uruguay,0,1
+223,3939989,2024-07-02,Bolivia,Panama,1,3
+223,3939988,2024-07-01,Mexico,Ecuador,0,0
+223,3939987,2024-07-01,Jamaica,Venezuela,0,3
+223,3939983,2024-06-29,Paraguay,Brazil,1,4
+223,3939982,2024-06-28,Uruguay,Bolivia,5,0
+223,3939980,2024-06-27,Ecuador,Jamaica,3,1
+223,3939979,2024-06-27,Venezuela,Mexico,1,0
+223,3939978,2024-06-26,Peru,Canada,0,1
+223,3939977,2024-06-26,Chile,Argentina,0,1
+223,3939976,2024-06-25,Brazil,Costa Rica,0,0
+223,3939975,2024-06-25,Colombia,Paraguay,2,1
+223,3939974,2024-06-24,United States,Bolivia,2,0
+223,3939972,2024-06-23,Ecuador,Venezuela,1,2
+223,3939971,2024-06-23,Mexico,Jamaica,1,0
+223,3939970,2024-06-22,Peru,Chile,0,0
+223,3939969,2024-06-21,Argentina,Canada,2,0
+1267,3923881,2024-02-11,Nigeria,Côte d'Ivoire,1,2
+1267,3923880,2024-02-10,South Africa,Congo DR,0,0
+1267,3922838,2024-02-07,Côte d'Ivoire,Congo DR,1,0
+1267,3922837,2024-02-07,Nigeria,South Africa,1,1
+1267,3922242,2024-01-29,Senegal,Côte d'Ivoire,1,1
+1267,3922239,2024-01-28,Equatorial Guinea,Guinea,0,1
+1267,3922659,2024-02-03,Mali,Côte d'Ivoire,1,2
+1267,3922658,2024-02-03,Cape Verde Islands,South Africa,0,0
+1267,3922244,2024-01-30,Mali,Burkina Faso,2,1
+1267,3922356,2024-02-02,Congo DR,Guinea,3,1
+1267,3922321,2024-02-02,Nigeria,Angola,1,0
+1267,3922237,2024-01-27,Angola,Namibia,3,0
+1267,3922243,2024-01-30,Morocco,South Africa,0,2
+1267,3922241,2024-01-29,Cape Verde Islands,Mauritania,1,0
+1267,3922240,2024-01-28,Egypt,Congo DR,1,1
+1267,3922238,2024-01-27,Nigeria,Cameroon,2,0
+1267,3920396,2024-01-18,Egypt,Ghana,2,2
+1267,3920386,2024-01-14,Nigeria,Equatorial Guinea,1,1
+1267,3920385,2024-01-14,Egypt,Mozambique,2,2
+1267,3920387,2024-01-14,Ghana,Cape Verde Islands,1,2
+1267,3920419,2024-01-24,Zambia,Morocco,0,1
+1267,3920418,2024-01-24,Tanzania,Congo DR,0,0
+1267,3920417,2024-01-24,Namibia,Mali,0,0
+1267,3920416,2024-01-24,South Africa,Tunisia,0,0
+1267,3920415,2024-01-23,Mauritania,Algeria,1,0
+1267,3920414,2024-01-23,Angola,Burkina Faso,2,0
+1267,3920413,2024-01-23,Gambia,Cameroon,2,3
+1267,3920412,2024-01-23,Guinea,Senegal,0,2
+1267,3920411,2024-01-22,Cape Verde Islands,Egypt,2,2
+1267,3920410,2024-01-22,Mozambique,Ghana,2,2
+1267,3920409,2024-01-22,Guinea-Bissau,Nigeria,0,1
+1267,3920408,2024-01-22,Equatorial Guinea,Côte d'Ivoire,4,0
+1267,3920407,2024-01-21,South Africa,Namibia,4,0
+1267,3920406,2024-01-21,Zambia,Tanzania,1,1
+1267,3920405,2024-01-21,Morocco,Congo DR,1,1
+1267,3920404,2024-01-20,Tunisia,Mali,1,1
+1267,3920403,2024-01-20,Mauritania,Angola,2,3
+1267,3920402,2024-01-20,Algeria,Burkina Faso,2,2
+1267,3920401,2024-01-19,Guinea,Gambia,1,0
+1267,3920400,2024-01-19,Senegal,Cameroon,3,1
+1267,3920399,2024-01-19,Cape Verde Islands,Mozambique,3,0
+1267,3920398,2024-01-18,Côte d'Ivoire,Nigeria,0,1
+1267,3920397,2024-01-18,Equatorial Guinea,Guinea-Bissau,4,2
+1267,3920395,2024-01-17,Congo DR,Zambia,1,1
+1267,3920394,2024-01-17,Morocco,Tanzania,3,0
+1267,3920393,2024-01-16,Tunisia,Namibia,0,1
+1267,3920392,2024-01-16,Burkina Faso,Mauritania,1,0
+1267,3920391,2024-01-16,Mali,South Africa,2,0
+1267,3920390,2024-01-15,Algeria,Angola,1,1
+1267,3920389,2024-01-15,Cameroon,Guinea,1,1
+1267,3920388,2024-01-15,Senegal,Gambia,3,0
+1267,3920384,2024-01-13,Côte d'Ivoire,Guinea-Bissau,2,0
