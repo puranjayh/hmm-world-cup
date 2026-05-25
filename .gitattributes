@@ -1,0 +1,19 @@
+# Normalize line endings (Windows -> Unix) for all text on commit.
+* text=auto eol=lf
+
+# Force LF for source files.
+*.py    text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.csv   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# Treat ML artifacts as binary (no diffs, no EOL conversion).
+*.pkl   binary
+*.npy   binary
+*.npz   binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary
