@@ -51,12 +51,7 @@ def build_joint_tensor(train_df: pd.DataFrame,
     matches_used = 0
     matches_skipped = 0
 
-    # Deduplicate the doubled rows: keep only the perspective where
-    # row.team < row.opponent alphabetically. Each unique match -> one row.
-    mask = train_df["team"] < train_df["opponent"]
-    unique_matches = train_df.loc[mask]
-
-    for _, row in unique_matches.iterrows():
+    for _, row in sorted_df.iterrows():
         team = row["team"]
         opp = row["opponent"]
         date = row["date"]
