@@ -2,8 +2,8 @@
 evaluate.py — Evaluate the trained HMM predictor against RF and XGBoost baselines.
 
 Runs three evaluation rounds:
-  1. Train < 2018-06-13, Test = 2018 WC matches
-  2. Train < 2022-11-19, Test = 2022 WC matches
+  1. Train < 2018-01-01, Test = 2018 WC matches
+  2. Train < 2022-01-01, Test = 2022 WC matches
   3. Train < 2024-01-01, Test = all 2024 matches
 
 For each round, scores all models on:
@@ -45,7 +45,7 @@ warnings.filterwarnings("ignore")
 EVAL_RUNS = [
     {
         "tag":          "wc_2018",
-        "train_cutoff": "2018-01-01",
+        "train_cutoff": "2018-06-13",
         "test_filter":  lambda df: df[
             (df["date"] >= "2018-06-14") & (df["date"] <= "2018-07-15")
         ],
@@ -53,7 +53,7 @@ EVAL_RUNS = [
     },
     {
         "tag":          "wc_2022",
-        "train_cutoff": "2022-01-01",
+        "train_cutoff": "2022-11-19",
         "test_filter":  lambda df: df[
             (df["date"] >= "2022-11-20") & (df["date"] <= "2022-12-18")
         ],
@@ -83,26 +83,18 @@ TREE_FEATURES = [
 # ---------------------------------------------------------------------------
 
 def _metrics(probs: np.ndarray, outcomes: np.ndarray) -> dict:
-    """
-    probs   : (N, 3) float  — columns are [Loss, Draw, Win]
-    outcomes: (N,)   int    — values in {0, 1, 2}
-    """
     eps = 1e-12
     n = len(outcomes)
 
-    # Log loss
     p_true   = probs[np.arange(n), outcomes]
     log_loss = float(-np.mean(np.log(np.clip(p_true, eps, 1.0))))
 
-    # Brier score
     one_hot = np.zeros_like(probs)
     one_hot[np.arange(n), outcomes] = 1.0
     brier = float(np.mean(np.sum((probs - one_hot) ** 2, axis=1)))
 
-    # Accuracy
     accuracy = float(np.mean(np.argmax(probs, axis=1) == outcomes))
 
-    # RPS — Ranked Probability Score (standard football forecasting metric)
     cum_probs  = np.cumsum(probs, axis=1)
     cum_actual = np.cumsum(one_hot, axis=1)
     rps = float(np.mean(
@@ -120,7 +112,7 @@ def _metrics(probs: np.ndarray, outcomes: np.ndarray) -> dict:
 
 def _metrics_no_draw(probs: np.ndarray, outcomes: np.ndarray) -> dict:
     """Same metrics but evaluated only on matches that weren't draws."""
-    mask = outcomes != 1  # 1 = Draw
+    mask = outcomes != 1
     if mask.sum() == 0:
         return {}
     return _metrics(probs[mask], outcomes[mask])
@@ -131,7 +123,6 @@ def _metrics_no_draw(probs: np.ndarray, outcomes: np.ndarray) -> dict:
 # ---------------------------------------------------------------------------
 
 def _rebuild_per_team(df: pd.DataFrame) -> dict:
-    """Rebuild the per-team date/outcome lookup used by Predictor._per_team."""
     per_team = {}
     for team, grp in df.sort_values("date").groupby("team", sort=False):
         per_team[team] = {
@@ -151,24 +142,26 @@ def _run_hmm(
     full_df: pd.DataFrame,
 ) -> np.ndarray:
     """
-    Trains TeamHMMs + joint tensor on train_df, then predicts each test match.
-    Dynamic updating: after each prediction the result is appended to
-    running_history so subsequent predictions see in-tournament form.
+    All teams use 5-state HMMs. Minimum 40 matches required to avoid
+    degenerate solutions (5-state HMM has 34 free parameters).
+    Teams below threshold are skipped; predictor falls back to uniform.
+    Dynamic updating: completed match results are appended after each
+    prediction so subsequent predictions see in-tournament form.
     """
-    # Build per-team sequences from training data only
+    # Collect teams with enough history for a 5-state HMM
     team_seqs: dict[str, np.ndarray] = {}
     for team, grp in train_df.groupby("team"):
         seq = grp.sort_values("date")["outcome"].to_numpy(int)
-        if len(seq) >= 20:
+        if len(seq) >= 40:
             team_seqs[team] = seq
 
-    # Fit one HMM per team
+    # Fit 5-state HMM for every qualifying team
     team_hmms: dict[str, TeamHMM] = {}
     for team, seq in team_seqs.items():
         try:
-            team_hmms[team] = TeamHMM().fit(seq)
+            team_hmms[team] = TeamHMM(n_states=5).fit(seq)
         except Exception:
-            pass  # skip teams that fail to converge
+            pass
 
     # Smoothing=2.0 stops the tensor from suppressing draws
     joint_tensor, _ = build_joint_tensor(train_df, team_hmms, smoothing=2.0)
@@ -181,7 +174,7 @@ def _run_hmm(
         .to_dict()
     )
 
-    # Dynamic updating: start history from train_df, append each result
+    # Dynamic updating: start from train_df, append results as they come in
     running_history = train_df.copy()
 
     predictor = Predictor(
@@ -196,7 +189,7 @@ def _run_hmm(
         r = predictor.predict(row["team"], row["opponent"], row["date"])
         probs[i] = [r["Loss"], r["Draw"], r["Win"]]
 
-        # Append both perspectives so next prediction sees this result
+        # Append both perspectives so the next prediction sees this result
         new_rows = pd.DataFrame([
             row.to_dict(),
             {
@@ -241,12 +234,7 @@ def _run_tree(
     test_matches: pd.DataFrame,
     model_type: str,
 ) -> np.ndarray:
-    """
-    model_type: 'rf' | 'xgb'
-    All features are pre-computed columns in filtered_matches.csv.
-    """
     available = [f for f in TREE_FEATURES if f in train_df.columns]
-
     train_u = _unique_matches(train_df).dropna(subset=available + ["outcome"])
     X_train = train_u[available].to_numpy(float)
     y_train = train_u["outcome"].to_numpy(int)
@@ -265,7 +253,6 @@ def _run_tree(
         )
 
     clf.fit(X_train, y_train)
-
     X_test = test_matches[available].fillna(1 / 3).to_numpy(float)
     raw = clf.predict_proba(X_test)
     return _align_classes(raw, clf.classes_, n=len(test_matches))
@@ -276,7 +263,6 @@ def _run_tree(
 # ---------------------------------------------------------------------------
 
 def _unique_matches(df: pd.DataFrame) -> pd.DataFrame:
-    """One row per match — keep the perspective where team < opponent."""
     return (
         df[df["team"] < df["opponent"]]
         .sort_values("date")
@@ -285,7 +271,6 @@ def _unique_matches(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _align_classes(raw: np.ndarray, classes: np.ndarray, n: int) -> np.ndarray:
-    """Re-order predict_proba columns to [Loss=0, Draw=1, Win=2]."""
     aligned = np.zeros((n, 3), float)
     for k, cls in enumerate(classes):
         aligned[:, int(cls)] = raw[:, k]
@@ -354,7 +339,6 @@ def main() -> None:
         train_df = full_df[full_df["date"] < cutoff].copy()
         test_df  = run["test_filter"](full_df).copy()
 
-        # De-duplicate to one row per match
         test_matches = (
             _unique_matches(test_df)
             .dropna(subset=["outcome", "elo_diff"])
@@ -370,7 +354,6 @@ def main() -> None:
 
         outcomes = test_matches["outcome"].to_numpy(int)
 
-        # ---- models -------------------------------------------------------
         print("  Running HMM …")
         hmm_probs = _run_hmm(train_df, test_matches, full_df)
 
@@ -383,9 +366,8 @@ def main() -> None:
         print("  Running XGBoost …")
         xgb_probs = _run_tree(train_df, test_matches, "xgb")
 
-        uniform   = np.full((len(test_matches), 3), 1.0 / 3.0)
+        uniform = np.full((len(test_matches), 3), 1.0 / 3.0)
 
-        # ---- score (all matches) ------------------------------------------
         results = {
             "HMM":     _metrics(hmm_probs,  outcomes),
             "XGBoost": _metrics(xgb_probs,  outcomes),
@@ -394,7 +376,6 @@ def main() -> None:
             "Uniform": _metrics(uniform,    outcomes),
         }
 
-        # ---- score (W/L only — draws excluded) ----------------------------
         results_nodraw = {
             name: _metrics_no_draw(p, outcomes)
             for name, p in [
@@ -407,12 +388,11 @@ def main() -> None:
         }
 
         all_results[tag] = {
-            "label":    label,
-            "models":   results,
-            "nodraw":   results_nodraw,
+            "label":  label,
+            "models": results,
+            "nodraw": results_nodraw,
         }
 
-        # ---- print table (all matches) ------------------------------------
         header = f"  {'Model':<12} | {'Log-loss':>8} | {'Brier':>6} | {'Acc':>6} | {'RPS':>6}"
         print(f"\n  All matches (n={len(outcomes)})")
         print(header)
@@ -423,7 +403,6 @@ def main() -> None:
                 f"| {m['accuracy']:>6.4f} | {m['rps']:>6.4f}"
             )
 
-        # ---- print table (W/L only) ---------------------------------------
         n_nodraw = int((outcomes != 1).sum())
         print(f"\n  W/L only (draws excluded, n={n_nodraw})")
         print(header)
@@ -435,14 +414,12 @@ def main() -> None:
                     f"| {m['accuracy']:>6.4f} | {m['rps']:>6.4f}"
                 )
 
-        # ---- calibration plot (HMM only) ----------------------------------
         _calibration_plot(
             hmm_probs, outcomes,
             ARTIFACTS_DIR / f"calibration_{tag}.png",
             title=label,
         )
 
-    # ---- save combined JSON -----------------------------------------------
     out_json = ARTIFACTS_DIR / "metrics_all.json"
     with open(out_json, "w", encoding="utf-8") as fh:
         json.dump(all_results, fh, indent=2)
