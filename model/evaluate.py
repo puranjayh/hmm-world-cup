@@ -45,7 +45,7 @@ warnings.filterwarnings("ignore")
 EVAL_RUNS = [
     {
         "tag":          "wc_2018",
-        "train_cutoff": "2018-06-13",
+        "train_cutoff": "2018-0-01",
         "test_filter":  lambda df: df[
             (df["date"] >= "2018-06-14") & (df["date"] <= "2018-07-15")
         ],
@@ -53,7 +53,7 @@ EVAL_RUNS = [
     },
     {
         "tag":          "wc_2022",
-        "train_cutoff": "2022-11-19",
+        "train_cutoff": "2022-01-01",
         "test_filter":  lambda df: df[
             (df["date"] >= "2022-11-20") & (df["date"] <= "2022-12-18")
         ],
@@ -119,6 +119,21 @@ def _metrics(probs: np.ndarray, outcomes: np.ndarray) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Helper — rebuild Predictor's per-team index after appending new matches
+# ---------------------------------------------------------------------------
+
+def _rebuild_per_team(df: pd.DataFrame) -> dict:
+    """Rebuild the per-team date/outcome lookup used by Predictor._per_team."""
+    per_team = {}
+    for team, grp in df.sort_values("date").groupby("team", sort=False):
+        per_team[team] = {
+            "dates":    grp["date"].to_numpy(),
+            "outcomes": grp["outcome"].to_numpy(dtype=int),
+        }
+    return per_team
+
+
+# ---------------------------------------------------------------------------
 # HMM — train from scratch on train_df, predict on test_matches
 # ---------------------------------------------------------------------------
 
@@ -146,8 +161,10 @@ def _run_hmm(
         except Exception:
             pass  # skip teams that fail to converge
 
-    # Build joint tensor from training matches only
-    joint_tensor, _ = build_joint_tensor(train_df, team_hmms)
+    # Build joint tensor from training matches only.
+    # Smoothing=2.0 on the Draw slice stops the tensor from suppressing draws —
+    # without extra smoothing the HMM never predicts Draw as the argmax.
+    joint_tensor, _ = build_joint_tensor(train_df, team_hmms, smoothing=2.0)
 
     # Most recent Elo per team within the training window (no leakage)
     elo_ratings = (
@@ -157,17 +174,39 @@ def _run_hmm(
         .to_dict()
     )
 
+    # Dynamic updating: start history from train_df, then append each
+    # completed test match so subsequent predictions see in-tournament form.
+    running_history = train_df.copy()
+
     predictor = Predictor(
         team_hmms=team_hmms,
         joint_tensor=joint_tensor,
-        history_df=full_df,        # date-gating prevents leakage
-        elo_ratings=elo_ratings,   # Bayesian Elo update in state dist
+        history_df=running_history,
+        elo_ratings=elo_ratings,
     )
 
     probs = np.zeros((len(test_matches), 3), float)
     for i, (_, row) in enumerate(test_matches.iterrows()):
         r = predictor.predict(row["team"], row["opponent"], row["date"])
         probs[i] = [r["Loss"], r["Draw"], r["Win"]]
+
+        # Append both perspectives of the completed match so the next
+        # prediction's forward algorithm sees in-tournament results.
+        new_rows = pd.DataFrame([
+            row.to_dict(),
+            {
+                **row.to_dict(),
+                "team":     row["opponent"],
+                "opponent": row["team"],
+                "outcome":  2 - int(row["outcome"]),  # flip: Win<->Loss
+            },
+        ])
+        running_history = pd.concat(
+            [running_history, new_rows], ignore_index=True
+        ).sort_values("date").reset_index(drop=True)
+        # Rebuild the predictor's per-team index from the updated history
+        predictor._per_team = _rebuild_per_team(running_history)
+
     return probs
 
 
@@ -331,11 +370,6 @@ def main() -> None:
         # ---- models -------------------------------------------------------
         print("  Running HMM …")
         hmm_probs = _run_hmm(train_df, test_matches, full_df)
-        print("\n--- HMM Diagnostics ---")
-        print("Prediction distribution:", pd.Series(np.argmax(hmm_probs, axis=1)).value_counts().to_dict())
-        print("Mean predicted probs (Loss, Draw, Win):", hmm_probs.mean(axis=0).round(4))
-        print("Actual outcome distribution:", pd.Series(outcomes).value_counts().to_dict())
-        print("Sample probs (first 5):\n", hmm_probs[:5].round(4))
 
         print("  Running Elo baseline …")
         elo_probs = _run_elo(train_df, test_matches)

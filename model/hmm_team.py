@@ -30,7 +30,7 @@ EPS = 1e-12
 # distribution.  The effective Peak/Poor likelihood ratio is exp(2*delta/S).
 # At S=600: a 300-pt gap → ~2.7x, keeping ELO secondary to the HMM history.
 # Increase toward 1000+ for a subtler nudge; decrease toward 400 for stronger.
-ELO_STATE_SCALE = 600.0
+ELO_STATE_SCALE = 300.0
 
 
 class TeamHMM:
