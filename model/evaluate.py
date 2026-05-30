@@ -21,7 +21,6 @@ Run:
 from __future__ import annotations
 
 import json
-import pickle
 import warnings
 from pathlib import Path
 
@@ -33,7 +32,6 @@ from xgboost import XGBClassifier
 
 from model.config import ARTIFACTS_DIR, OUTCOME_LABELS
 from model.data_loader import load_matches
-from model.features import build_rolling_features
 from model.hmm_team import TeamHMM
 from model.joint_emission import build_joint_tensor
 from model.predictor import Predictor
@@ -46,8 +44,8 @@ warnings.filterwarnings("ignore")
 
 EVAL_RUNS = [
     {
-        "tag":         "wc_2018",
-        "train_cutoff": "2018-01-01",
+        "tag":          "wc_2018",
+        "train_cutoff": "2018-06-13",
         "test_filter":  lambda df: df[
             (df["date"] >= "2018-06-14") & (df["date"] <= "2018-07-15")
         ],
@@ -55,7 +53,7 @@ EVAL_RUNS = [
     },
     {
         "tag":          "wc_2022",
-        "train_cutoff": "2022-01-01",
+        "train_cutoff": "2022-11-19",
         "test_filter":  lambda df: df[
             (df["date"] >= "2022-11-20") & (df["date"] <= "2022-12-18")
         ],
@@ -71,11 +69,12 @@ EVAL_RUNS = [
     },
 ]
 
+# Features already present in filtered_matches.csv — no extra engineering needed
 TREE_FEATURES = [
     "elo_diff",
-    "rolling_win_rate_5",      # already computed
-    "rolling_goal_diff_5",     # already computed
-    "tournament_weight",       # proxy for match importance
+    "rolling_win_rate_5",
+    "rolling_goal_diff_5",
+    "tournament_weight",
 ]
 
 
@@ -92,7 +91,7 @@ def _metrics(probs: np.ndarray, outcomes: np.ndarray) -> dict:
     n = len(outcomes)
 
     # Log loss
-    p_true = probs[np.arange(n), outcomes]
+    p_true   = probs[np.arange(n), outcomes]
     log_loss = float(-np.mean(np.log(np.clip(p_true, eps, 1.0))))
 
     # Brier score
@@ -147,13 +146,22 @@ def _run_hmm(
         except Exception:
             pass  # skip teams that fail to converge
 
-    # Build joint tensor from training matches
+    # Build joint tensor from training matches only
     joint_tensor, _ = build_joint_tensor(train_df, team_hmms)
+
+    # Most recent Elo per team within the training window (no leakage)
+    elo_ratings = (
+        train_df.sort_values("date")
+        .groupby("team")["team_elo"]
+        .last()
+        .to_dict()
+    )
 
     predictor = Predictor(
         team_hmms=team_hmms,
         joint_tensor=joint_tensor,
         history_df=full_df,        # date-gating prevents leakage
+        elo_ratings=elo_ratings,   # Bayesian Elo update in state dist
     )
 
     probs = np.zeros((len(test_matches), 3), float)
@@ -172,7 +180,7 @@ def _run_elo(
     test_matches: pd.DataFrame,
 ) -> np.ndarray:
     train_u = _unique_matches(train_df).dropna(subset=["elo_diff", "outcome"])
-    clf = LogisticRegression(multi_class="multinomial", max_iter=1000)
+    clf = LogisticRegression(max_iter=1000)
     clf.fit(
         train_u[["elo_diff"]].to_numpy(float),
         train_u["outcome"].to_numpy(int),
@@ -192,7 +200,8 @@ def _run_tree(
 ) -> np.ndarray:
     """
     model_type: 'rf' | 'xgb'
-    Features are pre-computed rolling stats; only training rows are used to fit.
+    All features are pre-computed columns in filtered_matches.csv — no
+    additional engineering needed.
     """
     available = [f for f in TREE_FEATURES if f in train_df.columns]
 
@@ -215,7 +224,7 @@ def _run_tree(
 
     clf.fit(X_train, y_train)
 
-    X_test = test_matches[available].fillna(1/3).to_numpy(float)
+    X_test = test_matches[available].fillna(1 / 3).to_numpy(float)
     raw = clf.predict_proba(X_test)
     return _align_classes(raw, clf.classes_, n=len(test_matches))
 
@@ -257,8 +266,8 @@ def _calibration_plot(
 
     p_win = probs[:, 2]
     y_win = (outcomes == 2).astype(int)
-    bins = np.linspace(0.0, 1.0, 11)
-    idx = np.clip(np.digitize(p_win, bins) - 1, 0, 9)
+    bins  = np.linspace(0.0, 1.0, 11)
+    idx   = np.clip(np.digitize(p_win, bins) - 1, 0, 9)
     bin_pred = np.array([
         p_win[idx == b].mean() if (idx == b).any() else np.nan for b in range(10)
     ])
@@ -286,11 +295,8 @@ def _calibration_plot(
 def main() -> None:
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Loading and preparing data …")
+    print("Loading data …")
     full_df = load_matches()
-
-    # Pre-compute rolling features for the entire dataset (date-safe internally)
-    full_df = build_rolling_features(full_df)
 
     all_results: dict[str, dict] = {}
 
@@ -324,18 +330,23 @@ def main() -> None:
 
         # ---- models -------------------------------------------------------
         print("  Running HMM …")
-        hmm_probs  = _run_hmm(train_df, test_matches, full_df)
+        hmm_probs = _run_hmm(train_df, test_matches, full_df)
+        print("\n--- HMM Diagnostics ---")
+        print("Prediction distribution:", pd.Series(np.argmax(hmm_probs, axis=1)).value_counts().to_dict())
+        print("Mean predicted probs (Loss, Draw, Win):", hmm_probs.mean(axis=0).round(4))
+        print("Actual outcome distribution:", pd.Series(outcomes).value_counts().to_dict())
+        print("Sample probs (first 5):\n", hmm_probs[:5].round(4))
 
         print("  Running Elo baseline …")
-        elo_probs  = _run_elo(train_df, test_matches)
+        elo_probs = _run_elo(train_df, test_matches)
 
         print("  Running Random Forest …")
-        rf_probs   = _run_tree(train_df, test_matches, "rf")
+        rf_probs  = _run_tree(train_df, test_matches, "rf")
 
         print("  Running XGBoost …")
-        xgb_probs  = _run_tree(train_df, test_matches, "xgb")
+        xgb_probs = _run_tree(train_df, test_matches, "xgb")
 
-        uniform    = np.full((len(test_matches), 3), 1.0 / 3.0)
+        uniform   = np.full((len(test_matches), 3), 1.0 / 3.0)
 
         # ---- score --------------------------------------------------------
         results = {
