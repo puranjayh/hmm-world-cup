@@ -26,6 +26,11 @@ from scipy.special import logsumexp
 
 RANDOM_SEED = 42
 EPS = 1e-12
+# Governs how strongly an ELO advantage shifts the predictive form-state
+# distribution.  The effective Peak/Poor likelihood ratio is exp(2*delta/S).
+# At S=600: a 300-pt gap → ~2.7x, keeping ELO secondary to the HMM history.
+# Increase toward 1000+ for a subtler nudge; decrease toward 400 for stronger.
+ELO_STATE_SCALE = 600.0
 
 
 class TeamHMM:
@@ -69,13 +74,26 @@ class TeamHMM:
         self.model.emissionprob_ = self.model.emissionprob_[order]
 
     # ---- predictive inference -----------------------------------------
-    def predictive_state_dist(self, prior_outcomes: np.ndarray) -> np.ndarray:
-        """P(state_t | outcomes_{1..t-1}) — the predictive state dist.
+    def predictive_state_dist(self,
+                              prior_outcomes: np.ndarray,
+                              elo_advantage: float = 0.0) -> np.ndarray:
+        """P(state_t | outcomes_{1..t-1}, elo_advantage) — the predictive state dist.
 
         Uses the forward algorithm in log-space (with log-sum-exp) for
         numerical stability, then pushes one step forward through the
         transition matrix to get the distribution over the *next*
         (unobserved) match's hidden state.
+
+        After the forward pass a Bayesian update is applied when
+        elo_advantage != 0:
+
+            P(state | history, elo) ∝ P(state | history) × exp(state_index
+                                        × elo_advantage / ELO_STATE_SCALE)
+
+        Positive elo_advantage (team rated higher) shifts mass toward Peak
+        Form (state 2); negative shifts mass toward Poor Form (state 0).
+        ELO_STATE_SCALE controls the magnitude — the HMM history remains
+        the primary driver.
         """
         startprob = np.asarray(self.model.startprob_, dtype=float)
         transmat = np.asarray(self.model.transmat_, dtype=float)
@@ -85,30 +103,41 @@ class TeamHMM:
 
         # No history -> the predictive dist for t=1 is just startprob.
         if prior_outcomes.size == 0:
-            return startprob.copy()
+            pred = startprob.copy()
+        else:
+            log_start = np.log(startprob + EPS)
+            log_trans = np.log(transmat + EPS)
+            log_emis = np.log(emis + EPS)              # shape (3 states, 3 obs)
 
-        log_start = np.log(startprob + EPS)
-        log_trans = np.log(transmat + EPS)
-        log_emis = np.log(emis + EPS)              # shape (3 states, 3 obs)
+            # Forward pass: alpha_t(i) = log P(o_{1..t}, state_t=i)
+            # Step 1 (initial): alpha_1 = log_start + log_emis[:, o_1]
+            alpha = log_start + log_emis[:, prior_outcomes[0]]
 
-        # Forward pass: alpha_t(i) = log P(o_{1..t}, state_t=i)
-        # Step 1 (initial): alpha_1 = log_start + log_emis[:, o_1]
-        alpha = log_start + log_emis[:, prior_outcomes[0]]
+            # Steps 2..T: alpha_t = logsumexp_i' (alpha_{t-1} + log_trans[i', i])
+            #                      + log_emis[:, o_t]
+            for o in prior_outcomes[1:]:
+                # alpha[:, None] has shape (3,1); log_trans shape (3,3).
+                # Sum along axis=0 collapses the previous state i'.
+                alpha = logsumexp(alpha[:, None] + log_trans, axis=0) + log_emis[:, o]
 
-        # Steps 2..T: alpha_t = logsumexp_i' (alpha_{t-1} + log_trans[i', i])
-        #                      + log_emis[:, o_t]
-        for o in prior_outcomes[1:]:
-            # alpha[:, None] has shape (3,1); log_trans shape (3,3).
-            # Sum along axis=0 collapses the previous state i'.
-            alpha = logsumexp(alpha[:, None] + log_trans, axis=0) + log_emis[:, o]
+            # Push forward one step to get the predictive dist over state_{T+1}:
+            # log P(state_{T+1}=j | o_{1..T}) ∝ logsumexp_i (alpha_T(i) + log_trans[i, j])
+            log_pred = logsumexp(alpha[:, None] + log_trans, axis=0)
+            # Softmax-normalize to a proper probability vector.
+            log_pred -= log_pred.max()                  # numerical stability
+            pred = np.exp(log_pred)
+            pred = pred / (pred.sum() + EPS)
 
-        # Push forward one step to get the predictive dist over state_{T+1}:
-        # log P(state_{T+1}=j | o_{1..T}) ∝ logsumexp_i (alpha_T(i) + log_trans[i, j])
-        log_pred = logsumexp(alpha[:, None] + log_trans, axis=0)
-        # Softmax-normalize to a proper probability vector.
-        log_pred -= log_pred.max()                  # numerical stability
-        pred = np.exp(log_pred)
-        pred = pred / (pred.sum() + EPS)
+        if elo_advantage != 0.0:
+            # Bayesian likelihood: exp(state_index × elo_advantage / scale).
+            # For negative elo_advantage the exponents are negative, so mass
+            # shifts toward state 0 (Poor Form) — handles weaker teams correctly.
+            elo_likelihood = np.exp(
+                np.arange(3, dtype=float) * elo_advantage / ELO_STATE_SCALE
+            )
+            pred = pred * elo_likelihood
+            pred = pred / (pred.sum() + EPS)
+
         return pred
 
     # ---- persistence --------------------------------------------------
