@@ -1,14 +1,10 @@
 """
-predictor.py — Match outcome predictor that combines per-team HMMs with the joint tensor.
+predictor.py — Match outcome predictor combining per-team HMMs with the joint tensor.
 
 For a hypothetical match (team vs opponent on some date):
-  1. Ask each team's HMM for its predictive hidden-state distribution,
-     using only outcomes strictly before the match date (no leakage).
-     If elo_ratings are provided, each team's distribution is adjusted via
-     a Bayesian ELO update inside the HMM (see hmm_team.py).
-  2. Combine via the joint emission tensor learned in joint_emission.py:
+  1. Ask each team's HMM for its predictive hidden-state distribution.
+  2. Combine via the joint emission tensor:
          P(outcome) = sum_{i,j} p_team[i] * p_opp[j] * T[i, j, outcome]
-This is just marginalizing out the two unknown hidden form states.
 """
 
 import numpy as np
@@ -23,70 +19,54 @@ class Predictor:
                  joint_tensor: np.ndarray,
                  history_df: pd.DataFrame,
                  elo_ratings: dict | None = None):
-        """
-        Parameters
-        ----------
-        elo_ratings : optional dict mapping team name -> current ELO rating.
-                      When provided, each team's predictive state distribution
-                      is adjusted by the relative ELO advantage before the
-                      joint tensor lookup.  Pass None to disable.
-        """
-        self.team_hmms = team_hmms
+        self.team_hmms    = team_hmms
         self.joint_tensor = np.asarray(joint_tensor, dtype=float)
-        self.elo_ratings = elo_ratings or {}
-        # Pre-sort once so we can take fast slices per team.
+        self.elo_ratings  = elo_ratings or {}
+        self._n_states    = self.joint_tensor.shape[0]  # always 5
+
         hist = history_df.sort_values("date").reset_index(drop=True)
         self._per_team = {}
         for team, grp in hist.groupby("team", sort=False):
             self._per_team[team] = {
-                "dates": grp["date"].to_numpy(),
+                "dates":    grp["date"].to_numpy(),
                 "outcomes": grp["outcome"].to_numpy(dtype=int),
             }
 
     def _team_prior_outcomes(self, team: str, as_of_date) -> np.ndarray:
-        """Return outcomes for `team` strictly before `as_of_date`."""
         rec = self._per_team.get(team)
         if rec is None:
             return np.empty(0, dtype=int)
-        idx = np.searchsorted(rec["dates"], np.datetime64(pd.Timestamp(as_of_date)), side="left")
+        idx = np.searchsorted(
+            rec["dates"], np.datetime64(pd.Timestamp(as_of_date)), side="left"
+        )
         return rec["outcomes"][:idx]
 
     def state_dist_as_of(self, team: str, as_of_date,
                          elo_advantage: float = 0.0) -> np.ndarray:
-        """Predictive hidden state dist for `team` just before `as_of_date`.
-
-        elo_advantage is passed through to the HMM's Bayesian ELO update.
-        """
         hmm = self.team_hmms.get(team)
         if hmm is None:
-            # Unknown team -> uniform prior over hidden form.
-            return np.full(3, 1.0 / 3.0)
+            # Unknown team — uniform over 5 states
+            return np.full(self._n_states, 1.0 / self._n_states)
         prior = self._team_prior_outcomes(team, as_of_date)
         return hmm.predictive_state_dist(prior, elo_advantage=elo_advantage)
 
     def predict(self, team: str, opponent: str, as_of_date) -> dict:
-        """Return outcome probability dict + the two state distributions."""
         elo_team = self.elo_ratings.get(team, 0.0)
-        elo_opp = self.elo_ratings.get(opponent, 0.0)
-        elo_diff = elo_team - elo_opp  # positive = team is rated higher
+        elo_opp  = self.elo_ratings.get(opponent, 0.0)
+        elo_diff = elo_team - elo_opp
 
-        p_team = self.state_dist_as_of(team, as_of_date, elo_advantage=elo_diff)
-        p_opp = self.state_dist_as_of(opponent, as_of_date, elo_advantage=-elo_diff)
+        p_team = self.state_dist_as_of(team,     as_of_date, elo_advantage=elo_diff)
+        p_opp  = self.state_dist_as_of(opponent, as_of_date, elo_advantage=-elo_diff)
 
-        # P(o) = sum_{i,j} p_team[i] * p_opp[j] * T[i, j, o]
         probs = np.einsum("i,j,ijo->o", p_team, p_opp, self.joint_tensor)
-        # Defensive normalization in case of tiny numerical drift.
         total = probs.sum()
-        if total <= 0:
-            probs = np.full(3, 1.0 / 3.0)
-        else:
-            probs = probs / total
+        probs = probs / total if total > 0 else np.full(3, 1.0 / 3.0)
 
         return {
-            "Loss": float(probs[0]),
-            "Draw": float(probs[1]),
-            "Win": float(probs[2]),
+            "Loss":       float(probs[0]),
+            "Draw":       float(probs[1]),
+            "Win":        float(probs[2]),
             "state_team": p_team.tolist(),
-            "state_opp": p_opp.tolist(),
-            "elo_diff": float(elo_diff),
+            "state_opp":  p_opp.tolist(),
+            "elo_diff":   float(elo_diff),
         }
