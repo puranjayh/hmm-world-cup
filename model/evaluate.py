@@ -152,14 +152,14 @@ def _run_hmm(
     team_seqs: dict[str, np.ndarray] = {}
     for team, grp in train_df.groupby("team"):
         seq = grp.sort_values("date")["outcome"].to_numpy(int)
-        if len(seq) >= 40:
+        if len(seq) >= 62:
             team_seqs[team] = seq
 
     # Fit 5-state HMM for every qualifying team
     team_hmms: dict[str, TeamHMM] = {}
     for team, seq in team_seqs.items():
         try:
-            team_hmms[team] = TeamHMM(n_states=5).fit(seq)
+            team_hmms[team] = TeamHMM(n_states=7).fit(seq)
         except Exception:
             pass
 
