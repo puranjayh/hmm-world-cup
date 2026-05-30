@@ -20,7 +20,7 @@ def build_joint_tensor(train_df: pd.DataFrame,
     tensor : np.ndarray shape (5, 5, 3) — T[i, j, o] = P(o | team=i, opp=j)
     diagnostics : dict
     """
-    n_states = 5  # all HMMs are 5-state
+    n_states = 7  # all HMMs are 5-state
 
     sorted_df = train_df.sort_values("date").reset_index(drop=True)
     per_team = {}
