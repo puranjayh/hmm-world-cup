@@ -2,8 +2,8 @@
 evaluate.py — Evaluate the trained HMM predictor against RF and XGBoost baselines.
 
 Runs three evaluation rounds:
-  1. Train < 2018-01-01, Test = 2018 WC matches
-  2. Train < 2022-01-01, Test = 2022 WC matches
+  1. Train < 2018-06-13, Test = 2018 WC matches
+  2. Train < 2022-11-19, Test = 2022 WC matches
   3. Train < 2024-01-01, Test = all 2024 matches
 
 For each round, scores all models on:
@@ -45,7 +45,7 @@ warnings.filterwarnings("ignore")
 EVAL_RUNS = [
     {
         "tag":          "wc_2018",
-        "train_cutoff": "2018-0-01",
+        "train_cutoff": "2018-01-01",
         "test_filter":  lambda df: df[
             (df["date"] >= "2018-06-14") & (df["date"] <= "2018-07-15")
         ],
@@ -118,6 +118,14 @@ def _metrics(probs: np.ndarray, outcomes: np.ndarray) -> dict:
     }
 
 
+def _metrics_no_draw(probs: np.ndarray, outcomes: np.ndarray) -> dict:
+    """Same metrics but evaluated only on matches that weren't draws."""
+    mask = outcomes != 1  # 1 = Draw
+    if mask.sum() == 0:
+        return {}
+    return _metrics(probs[mask], outcomes[mask])
+
+
 # ---------------------------------------------------------------------------
 # Helper — rebuild Predictor's per-team index after appending new matches
 # ---------------------------------------------------------------------------
@@ -144,7 +152,8 @@ def _run_hmm(
 ) -> np.ndarray:
     """
     Trains TeamHMMs + joint tensor on train_df, then predicts each test match.
-    full_df is passed to Predictor so date-gating can look up pre-match history.
+    Dynamic updating: after each prediction the result is appended to
+    running_history so subsequent predictions see in-tournament form.
     """
     # Build per-team sequences from training data only
     team_seqs: dict[str, np.ndarray] = {}
@@ -161,9 +170,7 @@ def _run_hmm(
         except Exception:
             pass  # skip teams that fail to converge
 
-    # Build joint tensor from training matches only.
-    # Smoothing=2.0 on the Draw slice stops the tensor from suppressing draws —
-    # without extra smoothing the HMM never predicts Draw as the argmax.
+    # Smoothing=2.0 stops the tensor from suppressing draws
     joint_tensor, _ = build_joint_tensor(train_df, team_hmms, smoothing=2.0)
 
     # Most recent Elo per team within the training window (no leakage)
@@ -174,8 +181,7 @@ def _run_hmm(
         .to_dict()
     )
 
-    # Dynamic updating: start history from train_df, then append each
-    # completed test match so subsequent predictions see in-tournament form.
+    # Dynamic updating: start history from train_df, append each result
     running_history = train_df.copy()
 
     predictor = Predictor(
@@ -190,8 +196,7 @@ def _run_hmm(
         r = predictor.predict(row["team"], row["opponent"], row["date"])
         probs[i] = [r["Loss"], r["Draw"], r["Win"]]
 
-        # Append both perspectives of the completed match so the next
-        # prediction's forward algorithm sees in-tournament results.
+        # Append both perspectives so next prediction sees this result
         new_rows = pd.DataFrame([
             row.to_dict(),
             {
@@ -204,7 +209,6 @@ def _run_hmm(
         running_history = pd.concat(
             [running_history, new_rows], ignore_index=True
         ).sort_values("date").reset_index(drop=True)
-        # Rebuild the predictor's per-team index from the updated history
         predictor._per_team = _rebuild_per_team(running_history)
 
     return probs
@@ -239,8 +243,7 @@ def _run_tree(
 ) -> np.ndarray:
     """
     model_type: 'rf' | 'xgb'
-    All features are pre-computed columns in filtered_matches.csv — no
-    additional engineering needed.
+    All features are pre-computed columns in filtered_matches.csv.
     """
     available = [f for f in TREE_FEATURES if f in train_df.columns]
 
@@ -382,7 +385,7 @@ def main() -> None:
 
         uniform   = np.full((len(test_matches), 3), 1.0 / 3.0)
 
-        # ---- score --------------------------------------------------------
+        # ---- score (all matches) ------------------------------------------
         results = {
             "HMM":     _metrics(hmm_probs,  outcomes),
             "XGBoost": _metrics(xgb_probs,  outcomes),
@@ -390,17 +393,47 @@ def main() -> None:
             "Elo":     _metrics(elo_probs,  outcomes),
             "Uniform": _metrics(uniform,    outcomes),
         }
-        all_results[tag] = {"label": label, "models": results}
 
-        # ---- print table --------------------------------------------------
+        # ---- score (W/L only — draws excluded) ----------------------------
+        results_nodraw = {
+            name: _metrics_no_draw(p, outcomes)
+            for name, p in [
+                ("HMM",     hmm_probs),
+                ("XGBoost", xgb_probs),
+                ("RF",      rf_probs),
+                ("Elo",     elo_probs),
+                ("Uniform", uniform),
+            ]
+        }
+
+        all_results[tag] = {
+            "label":    label,
+            "models":   results,
+            "nodraw":   results_nodraw,
+        }
+
+        # ---- print table (all matches) ------------------------------------
         header = f"  {'Model':<12} | {'Log-loss':>8} | {'Brier':>6} | {'Acc':>6} | {'RPS':>6}"
-        print("\n" + header)
+        print(f"\n  All matches (n={len(outcomes)})")
+        print(header)
         print("  " + "-" * (len(header) - 2))
         for name, m in results.items():
             print(
                 f"  {name:<12} | {m['log_loss']:>8.4f} | {m['brier']:>6.4f} "
                 f"| {m['accuracy']:>6.4f} | {m['rps']:>6.4f}"
             )
+
+        # ---- print table (W/L only) ---------------------------------------
+        n_nodraw = int((outcomes != 1).sum())
+        print(f"\n  W/L only (draws excluded, n={n_nodraw})")
+        print(header)
+        print("  " + "-" * (len(header) - 2))
+        for name, m in results_nodraw.items():
+            if m:
+                print(
+                    f"  {name:<12} | {m['log_loss']:>8.4f} | {m['brier']:>6.4f} "
+                    f"| {m['accuracy']:>6.4f} | {m['rps']:>6.4f}"
+                )
 
         # ---- calibration plot (HMM only) ----------------------------------
         _calibration_plot(
