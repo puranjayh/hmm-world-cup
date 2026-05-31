@@ -27,7 +27,7 @@ FEATURE_NAMES = [
     "ewa_win_rate",
     "neutral",
     "opp_elo_strength_5",
-    "rolling_win_vs_strong_5",
+    "win_vs_strong",
 ]
 N_FEATURES = len(FEATURE_NAMES)
 
