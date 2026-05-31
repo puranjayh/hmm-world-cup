@@ -4,24 +4,24 @@
     "models": {
       "GlobalGHMM": {
         "n": 49,
-        "log_loss": 1.0214,
-        "brier": 0.5973,
+        "log_loss": 0.9928,
+        "brier": 0.5832,
         "accuracy": 0.551,
-        "rps": 0.2083
+        "rps": 0.2025
       },
       "XGBoost": {
         "n": 49,
-        "log_loss": 1.036,
-        "brier": 0.5998,
+        "log_loss": 1.0535,
+        "brier": 0.6175,
         "accuracy": 0.551,
-        "rps": 0.2096
+        "rps": 0.2154
       },
       "RF": {
         "n": 49,
-        "log_loss": 0.9977,
-        "brier": 0.5927,
-        "accuracy": 0.5306,
-        "rps": 0.2122
+        "log_loss": 0.9806,
+        "brier": 0.5831,
+        "accuracy": 0.5918,
+        "rps": 0.201
       },
       "Elo": {
         "n": 49,
@@ -41,24 +41,24 @@
     "nodraw": {
       "GlobalGHMM": {
         "n": 38,
-        "log_loss": 0.7988,
-        "brier": 0.4541,
+        "log_loss": 0.8575,
+        "brier": 0.4828,
         "accuracy": 0.7105,
-        "rps": 0.2084
+        "rps": 0.2105
       },
       "XGBoost": {
         "n": 38,
-        "log_loss": 0.7537,
-        "brier": 0.4253,
+        "log_loss": 0.8081,
+        "brier": 0.4574,
         "accuracy": 0.7105,
-        "rps": 0.1976
+        "rps": 0.2053
       },
       "RF": {
         "n": 38,
-        "log_loss": 0.7481,
-        "brier": 0.4491,
-        "accuracy": 0.6579,
-        "rps": 0.2069
+        "log_loss": 0.7955,
+        "brier": 0.4535,
+        "accuracy": 0.7632,
+        "rps": 0.2001
       },
       "Elo": {
         "n": 38,
@@ -81,24 +81,24 @@
     "models": {
       "GlobalGHMM": {
         "n": 48,
-        "log_loss": 1.0993,
-        "brier": 0.6361,
+        "log_loss": 1.0761,
+        "brier": 0.6291,
         "accuracy": 0.5,
-        "rps": 0.2177
+        "rps": 0.213
       },
       "XGBoost": {
         "n": 48,
-        "log_loss": 1.2263,
-        "brier": 0.7452,
-        "accuracy": 0.4167,
-        "rps": 0.2738
+        "log_loss": 1.1887,
+        "brier": 0.7189,
+        "accuracy": 0.4375,
+        "rps": 0.2562
       },
       "RF": {
         "n": 48,
-        "log_loss": 1.2896,
-        "brier": 0.744,
-        "accuracy": 0.4167,
-        "rps": 0.2617
+        "log_loss": 1.0404,
+        "brier": 0.637,
+        "accuracy": 0.4583,
+        "rps": 0.2154
       },
       "Elo": {
         "n": 48,
@@ -118,24 +118,24 @@
     "nodraw": {
       "GlobalGHMM": {
         "n": 35,
-        "log_loss": 1.0195,
-        "brier": 0.5569,
-        "accuracy": 0.6857,
-        "rps": 0.2392
+        "log_loss": 1.0019,
+        "brier": 0.5547,
+        "accuracy": 0.6286,
+        "rps": 0.2336
       },
       "XGBoost": {
         "n": 35,
-        "log_loss": 1.1083,
-        "brier": 0.6361,
-        "accuracy": 0.5714,
-        "rps": 0.2953
+        "log_loss": 1.0166,
+        "brier": 0.5929,
+        "accuracy": 0.6,
+        "rps": 0.2719
       },
       "RF": {
         "n": 35,
-        "log_loss": 1.108,
-        "brier": 0.6259,
-        "accuracy": 0.5429,
-        "rps": 0.275
+        "log_loss": 0.8601,
+        "brier": 0.5074,
+        "accuracy": 0.6,
+        "rps": 0.2216
       },
       "Elo": {
         "n": 35,
@@ -158,24 +158,24 @@
     "models": {
       "GlobalGHMM": {
         "n": 160,
-        "log_loss": 1.0393,
-        "brier": 0.6252,
-        "accuracy": 0.475,
-        "rps": 0.2002
+        "log_loss": 1.0525,
+        "brier": 0.6342,
+        "accuracy": 0.4375,
+        "rps": 0.2036
       },
       "XGBoost": {
         "n": 160,
-        "log_loss": 1.0627,
-        "brier": 0.6409,
-        "accuracy": 0.45,
-        "rps": 0.2057
+        "log_loss": 1.1098,
+        "brier": 0.6695,
+        "accuracy": 0.425,
+        "rps": 0.2184
       },
       "RF": {
         "n": 160,
-        "log_loss": 1.3187,
-        "brier": 0.7662,
-        "accuracy": 0.4062,
-        "rps": 0.2424
+        "log_loss": 1.129,
+        "brier": 0.6791,
+        "accuracy": 0.4,
+        "rps": 0.2175
       },
       "Elo": {
         "n": 160,
@@ -195,24 +195,24 @@
     "nodraw": {
       "GlobalGHMM": {
         "n": 107,
-        "log_loss": 0.9318,
-        "brier": 0.5365,
-        "accuracy": 0.6262,
-        "rps": 0.226
+        "log_loss": 0.9443,
+        "brier": 0.5446,
+        "accuracy": 0.6449,
+        "rps": 0.23
       },
       "XGBoost": {
         "n": 107,
-        "log_loss": 0.9115,
-        "brier": 0.5255,
-        "accuracy": 0.6542,
-        "rps": 0.2255
+        "log_loss": 0.9561,
+        "brier": 0.5552,
+        "accuracy": 0.5514,
+        "rps": 0.2404
       },
       "RF": {
         "n": 107,
-        "log_loss": 1.1195,
-        "brier": 0.6338,
-        "accuracy": 0.5234,
-        "rps": 0.2585
+        "log_loss": 0.9996,
+        "brier": 0.5804,
+        "accuracy": 0.5327,
+        "rps": 0.2422
       },
       "Elo": {
         "n": 107,

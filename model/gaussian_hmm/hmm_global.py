@@ -41,12 +41,15 @@ EPS             = 1e-12
 
 FEATURE_NAMES = [
     "elo_diff",
-    "rolling_win_rate_5",
-    "rolling_goal_diff_5",
     "tournament_weight",
+    "ewa_win_rate",
+    "ewa_goal_diff",
+    "neutral",
+    "opp_elo_strength_5",
+    "rolling_win_vs_strong_5",
 ]
 N_FEATURES = len(FEATURE_NAMES)
-N_STATES   = 6   # global match regimes
+N_STATES   = 3   # global match regimes
 
 
 class GlobalGaussianHMM:
@@ -57,12 +60,12 @@ class GlobalGaussianHMM:
         self.scaler   = StandardScaler()
         self.model    = GaussianHMM(
             n_components=n_states,
-            covariance_type="full",
-            n_iter=300,
+            covariance_type="diag",  # diag: n_states*n_features params vs full: n_states*n_features^2
+            n_iter=500,
             tol=1e-4,
             random_state=RANDOM_SEED,
             init_params="stmc",
-            min_covar=1e-3,
+            min_covar=1.0,           # strong floor on variance — prevents collapse with 9 features
         )
 
     def fit(self, X: np.ndarray, lengths: list) -> "GlobalGaussianHMM":
@@ -75,10 +78,16 @@ class GlobalGaussianHMM:
 
         self.model.fit(X, lengths=lengths)
 
-        # Regularise covariances
-        d   = X.shape[1]
-        reg = 0.1 * np.eye(d)
-        self.model.covars_ = np.array([c + reg for c in self.model.covars_])
+        # Clamp diagonal variances — bypass hmmlearn's setter to avoid shape validation
+        clamped = np.maximum(self.model.covars_, 0.5)
+        object.__setattr__(self.model, '_covars_', clamped)
+
+        # Fix degenerate transmat rows (zero sum = state never visited)
+        # Replace with uniform distribution so forward algorithm doesn't produce NaN
+        tm = self.model.transmat_.copy()
+        zero_rows = tm.sum(axis=1) == 0
+        tm[zero_rows] = 1.0 / self.n_states
+        self.model.transmat_ = tm
 
         return self
 
@@ -110,27 +119,21 @@ class GlobalGaussianHMM:
         return pred / (pred.sum() + EPS)
 
     def _log_likelihoods(self, X: np.ndarray) -> np.ndarray:
-        means  = self.model.means_
-        covars = self.model.covars_
+        """Diagonal covariance log-likelihood → (T, n_states).
+        covars_ shape is (n_states, n_features) for diag.
+        """
+        means  = self.model.means_    # (n_states, n_features)
+        covars = self.model.covars_   # (n_states, n_features)
         T, d   = X.shape
         log_lik = np.zeros((T, self.n_states), dtype=float)
 
         for s in range(self.n_states):
             mu  = means[s]
-            cov = covars[s]
-            try:
-                cov_inv       = np.linalg.inv(cov)
-                sign, log_det = np.linalg.slogdet(cov)
-                if sign <= 0:
-                    raise np.linalg.LinAlgError
-            except np.linalg.LinAlgError:
-                cov_inv = np.eye(d)
-                log_det = 0.0
-
+            var = np.maximum(covars[s], EPS)   # (n_features,)
             diff = X - mu
-            maha = np.sum(diff @ cov_inv * diff, axis=1)
-            log_lik[:, s] = -0.5 * (d * np.log(2 * np.pi) + log_det + maha)
-
+            log_lik[:, s] = -0.5 * np.sum(
+                np.log(2 * np.pi * var) + (diff ** 2) / var, axis=1
+            )
         return log_lik
 
     def save(self, path) -> None:

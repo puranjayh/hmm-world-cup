@@ -22,12 +22,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
-from model.gaussian_hmm.config import ARTIFACTS_DIR
+from model.config import ARTIFACTS_DIR
 from model.data_loader import load_matches
 from model.gaussian_hmm.hmm_global import GlobalGaussianHMM, FEATURE_NAMES, N_STATES
 from model.gaussian_hmm.predictor_global import GlobalPredictor, WINDOW
 
 warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", message=".*transmat_.*")
 
 RANDOM_SEED = 42
 
@@ -58,8 +59,17 @@ EVAL_RUNS = [
     },
 ]
 
-TREE_FEATURES = ["elo_diff", "rolling_win_rate_5", "rolling_goal_diff_5", "tournament_weight"]
-
+TREE_FEATURES = [
+    "elo_diff",
+    "rolling_win_rate_5",
+    "rolling_goal_diff_5",
+    "tournament_weight",
+    "neutral",
+    "ewa_win_rate",
+    "ewa_goal_diff",
+    "opp_elo_strength_5",
+    "rolling_win_vs_strong_5",
+]
 
 # ---------------------------------------------------------------------------
 # Metrics
@@ -172,6 +182,9 @@ def _run_global_hmm(train_df, test_matches):
     # 3. Train logistic head on last 40% of training matches
     print("  Training logistic head …")
     X_head, y_head = _build_head_features(train_df, hmm)
+    # Fill NaNs from new rolling features before fitting head
+    X_head = np.nan_to_num(X_head, nan=0.0)
+
     head = LogisticRegression(max_iter=1000, C=1.0, random_state=RANDOM_SEED)
     head.fit(X_head, y_head)
     print(f"  Head trained on {len(y_head)} matches")
