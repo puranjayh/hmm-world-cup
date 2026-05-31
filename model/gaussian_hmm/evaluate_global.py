@@ -1,8 +1,14 @@
 """
-evaluate_gaussian.py — Benchmark the Gaussian HMM (3-state) against baselines.
+evaluate_global.py — Benchmark the global Gaussian HMM against baselines.
+
+Architecture:
+  - ONE GlobalGaussianHMM fitted on all training matches (learns match regimes)
+  - Per-match state distributions computed via forward algorithm (last 10 matches)
+  - LogisticRegression head: outer(p_A, p_B) + elo features → P(W/D/L)
+  - Dynamic updating: completed results added to history before next prediction
 
 Run:
-    python -m model.gaussian_hmm.evaluate_gaussian
+    python -m model.gaussian_hmm.evaluate_global
 """
 from __future__ import annotations
 
@@ -12,17 +18,18 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
-from model.config import ARTIFACTS_DIR
+from model.gaussian_hmm.config import ARTIFACTS_DIR
 from model.data_loader import load_matches
-from model.gaussian_hmm.hmm_team_gaussian import TeamGaussianHMM, FEATURE_NAMES
-from model.gaussian_hmm.joint_emission_gaussian import build_joint_tensor_gaussian
-from model.gaussian_hmm.predictor_gaussian import GaussianPredictor
+from model.gaussian_hmm.hmm_global import GlobalGaussianHMM, FEATURE_NAMES, N_STATES
+from model.gaussian_hmm.predictor_global import GlobalPredictor, WINDOW
 
 warnings.filterwarnings("ignore")
+
+RANDOM_SEED = 42
 
 EVAL_RUNS = [
     {
@@ -51,24 +58,14 @@ EVAL_RUNS = [
     },
 ]
 
-TREE_FEATURES = [
-    "elo_diff",
-    "rolling_win_rate_5",
-    "rolling_goal_diff_5",
-    "tournament_weight",
-]
-
-# 3-state Gaussian HMM: 3*7*2 (means+vars) + 3*3 (trans) + 3 (start) = 54 params
-# 40 matches is a safe minimum for diagonal covariance
-MIN_MATCHES_GAUSSIAN = 20
-N_STATES_GAUSSIAN    = 3
+TREE_FEATURES = ["elo_diff", "rolling_win_rate_5", "rolling_goal_diff_5", "tournament_weight"]
 
 
 # ---------------------------------------------------------------------------
 # Metrics
 # ---------------------------------------------------------------------------
 
-def _metrics(probs: np.ndarray, outcomes: np.ndarray) -> dict:
+def _metrics(probs, outcomes):
     eps = 1e-12
     n   = len(outcomes)
     p_true   = probs[np.arange(n), outcomes]
@@ -77,18 +74,11 @@ def _metrics(probs: np.ndarray, outcomes: np.ndarray) -> dict:
     one_hot[np.arange(n), outcomes] = 1.0
     brier    = float(np.mean(np.sum((probs - one_hot) ** 2, axis=1)))
     accuracy = float(np.mean(np.argmax(probs, axis=1) == outcomes))
-    cum_probs  = np.cumsum(probs,   axis=1)
-    cum_actual = np.cumsum(one_hot, axis=1)
-    rps = float(np.mean(
-        np.sum((cum_probs - cum_actual) ** 2, axis=1) / (probs.shape[1] - 1)
-    ))
-    return {
-        "n":        int(n),
-        "log_loss": round(log_loss, 4),
-        "brier":    round(brier,    4),
-        "accuracy": round(accuracy, 4),
-        "rps":      round(rps,      4),
-    }
+    cum_p    = np.cumsum(probs,   axis=1)
+    cum_a    = np.cumsum(one_hot, axis=1)
+    rps      = float(np.mean(np.sum((cum_p - cum_a) ** 2, axis=1) / (probs.shape[1] - 1)))
+    return {"n": int(n), "log_loss": round(log_loss,4), "brier": round(brier,4),
+            "accuracy": round(accuracy,4), "rps": round(rps,4)}
 
 
 def _metrics_no_draw(probs, outcomes):
@@ -96,63 +86,97 @@ def _metrics_no_draw(probs, outcomes):
     return _metrics(probs[mask], outcomes[mask]) if mask.sum() > 0 else {}
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _rebuild_per_team(df: pd.DataFrame) -> dict:
-    per_team = {}
-    for team, grp in df.sort_values("date").groupby("team", sort=False):
-        per_team[team] = {
-            "dates":    grp["date"].to_numpy(),
-            "features": grp[FEATURE_NAMES].fillna(0).to_numpy(dtype=float),
-        }
-    return per_team
-
-
 def _unique_matches(df):
     return df[df["team"] < df["opponent"]].sort_values("date").reset_index(drop=True)
 
 
 def _align_classes(raw, classes, n):
-    aligned = np.zeros((n, 3), float)
-    for k, cls in enumerate(classes):
-        aligned[:, int(cls)] = raw[:, k]
-    return aligned
+    a = np.zeros((n, 3), float)
+    for k, c in enumerate(classes):
+        a[:, int(c)] = raw[:, k]
+    return a
 
 
 # ---------------------------------------------------------------------------
-# Gaussian HMM runner
+# Build logistic head training data from train_df
 # ---------------------------------------------------------------------------
 
-def _run_gaussian_hmm(train_df, test_matches):
-    import model.gaussian_hmm.hmm_team_gaussian as _m; print("scaler" in dir(_m.TeamGaussianHMM()))
-    team_seqs = {}
+def _build_head_features(train_df: pd.DataFrame,
+                         hmm: GlobalGaussianHMM) -> tuple[np.ndarray, np.ndarray]:
+    """
+    For each match in train_df (deduplicated), compute state distributions
+    using only prior matches, then build outer-product feature vectors.
+    Uses a 70/30 split: HMM trained on first 70%, head trained on last 30%
+    to avoid the HMM memorising its own training data.
+    """
+    # Build per-team lookup
+    sorted_df = train_df.sort_values("date").reset_index(drop=True)
+    per_team  = {}
+    for team, grp in sorted_df.groupby("team", sort=False):
+        per_team[team] = {
+            "dates":    grp["date"].to_numpy(),
+            "features": grp[FEATURE_NAMES].fillna(0).to_numpy(dtype=float),
+        }
+
+    def state_dist(team, date):
+        rec = per_team.get(team)
+        if rec is None:
+            return np.full(hmm.n_states, 1.0 / hmm.n_states)
+        idx   = np.searchsorted(rec["dates"], np.datetime64(pd.Timestamp(date)), side="left")
+        feats = rec["features"][max(0, idx - WINDOW): idx]
+        return hmm.forward_state_dist(feats)
+
+    unique = _unique_matches(train_df).dropna(subset=["outcome", "elo_diff"])
+    # Use last 40% of matches for head training (chronological)
+    n_head = max(int(len(unique) * 0.4), 50)
+    head_matches = unique.iloc[-n_head:]
+
+    X_list, y_list = [], []
+    for _, row in head_matches.iterrows():
+        p_t = state_dist(row["team"],     row["date"])
+        p_o = state_dist(row["opponent"], row["date"])
+        elo_diff = float(row["elo_diff"])
+        outer    = np.outer(p_t, p_o).ravel()
+        fv       = np.concatenate([outer, [elo_diff, elo_diff**2, abs(elo_diff)]])
+        X_list.append(fv)
+        y_list.append(int(row["outcome"]))
+
+    return np.array(X_list), np.array(y_list)
+
+
+# ---------------------------------------------------------------------------
+# Global HMM runner
+# ---------------------------------------------------------------------------
+
+def _run_global_hmm(train_df, test_matches):
+    # 1. Build sequences: one per team, chronological
+    per_team_feats = {}
+    lengths        = []
+    all_X          = []
+
     for team, grp in train_df.groupby("team"):
-        feat = grp.sort_values("date")[FEATURE_NAMES].fillna(0).to_numpy(float)
-        if len(feat) >= MIN_MATCHES_GAUSSIAN:
-            team_seqs[team] = feat
+        feats = grp.sort_values("date")[FEATURE_NAMES].fillna(0).to_numpy(float)
+        if len(feats) >= 5:
+            per_team_feats[team] = feats
+            all_X.append(feats)
+            lengths.append(len(feats))
 
-    team_hmms = {}
-    failed = 0
-    for team, feat in team_seqs.items():
-        try:
-            team_hmms[team] = TeamGaussianHMM(n_states=N_STATES_GAUSSIAN).fit(feat)
-        except Exception as e:
-            failed += 1
-            if failed <= 3:
-                print(f"  ERROR fitting {team}: {type(e).__name__}: {e}")
+    X_all = np.vstack(all_X)
 
-    print(f"  Fitted {len(team_hmms)} Gaussian HMMs, {failed} failed, "
-          f"{len(team_seqs) - len(team_hmms) - failed} skipped (< {MIN_MATCHES_GAUSSIAN} matches)")
+    # 2. Fit global HMM
+    print(f"  Fitting global HMM on {X_all.shape[0]} observations, "
+          f"{len(lengths)} team sequences …")
+    hmm = GlobalGaussianHMM(n_states=N_STATES)
+    hmm.fit(X_all, lengths=lengths)
 
-    if not team_hmms:
-        print("  WARNING: no Gaussian HMMs fitted — returning uniform")
-        return np.full((len(test_matches), 3), 1.0 / 3.0)
+    # 3. Train logistic head on last 40% of training matches
+    print("  Training logistic head …")
+    X_head, y_head = _build_head_features(train_df, hmm)
+    head = LogisticRegression(max_iter=1000, C=1.0, random_state=RANDOM_SEED)
+    head.fit(X_head, y_head)
+    print(f"  Head trained on {len(y_head)} matches")
 
-    joint_tensor, diag = build_joint_tensor_gaussian(train_df, team_hmms, smoothing=2.0)
-    print(f"  Tensor: {diag['matches_used']} matches used, {diag['matches_skipped']} skipped")
-
+    # 4. Elo ratings
     elo_ratings = (
         train_df.sort_values("date")
         .groupby("team")["team_elo"]
@@ -160,19 +184,23 @@ def _run_gaussian_hmm(train_df, test_matches):
         .to_dict()
     )
 
+    # 5. Dynamic prediction
     running_history = train_df.copy()
-    predictor = GaussianPredictor(
-        team_hmms=team_hmms,
-        joint_tensor=joint_tensor,
+    predictor = GlobalPredictor(
+        global_hmm=hmm,
+        head=head,
         history_df=running_history,
-        elo_ratings=elo_ratings,
     )
 
     probs = np.zeros((len(test_matches), 3), float)
     for i, (_, row) in enumerate(test_matches.iterrows()):
-        r = predictor.predict(row["team"], row["opponent"], row["date"])
+        r = predictor.predict(
+            row["team"], row["opponent"], row["date"],
+            elo_ratings=elo_ratings
+        )
         probs[i] = [r["Loss"], r["Draw"], r["Win"]]
 
+        # Append result to running history
         new_rows = pd.DataFrame([
             row.to_dict(),
             {**row.to_dict(), "team": row["opponent"], "opponent": row["team"],
@@ -181,9 +209,10 @@ def _run_gaussian_hmm(train_df, test_matches):
         running_history = pd.concat(
             [running_history, new_rows], ignore_index=True
         ).sort_values("date").reset_index(drop=True)
-        predictor._per_team = _rebuild_per_team(running_history)
+        predictor.update_history(running_history)
 
     return probs
+
 
 
 # ---------------------------------------------------------------------------
@@ -199,8 +228,8 @@ def _run_elo(train_df, test_matches):
 
 
 def _run_tree(train_df, test_matches, model_type):
-    available = [f for f in TREE_FEATURES if f in train_df.columns]
-    train_u   = _unique_matches(train_df).dropna(subset=available + ["outcome"])
+    avail   = [f for f in TREE_FEATURES if f in train_df.columns]
+    train_u = _unique_matches(train_df).dropna(subset=avail + ["outcome"])
     clf = (
         RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
         if model_type == "rf"
@@ -208,8 +237,8 @@ def _run_tree(train_df, test_matches, model_type):
                            use_label_encoder=False, eval_metric="mlogloss",
                            random_state=42, verbosity=0)
     )
-    clf.fit(train_u[available].to_numpy(float), train_u["outcome"].to_numpy(int))
-    X_test = test_matches[available].fillna(1 / 3).to_numpy(float)
+    clf.fit(train_u[avail].to_numpy(float), train_u["outcome"].to_numpy(int))
+    X_test = test_matches[avail].fillna(1/3).to_numpy(float)
     return _align_classes(clf.predict_proba(X_test), clf.classes_, n=len(test_matches))
 
 
@@ -217,7 +246,7 @@ def _run_tree(train_df, test_matches, model_type):
 # Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
+def main():
     out_dir = ARTIFACTS_DIR / "gaussian"
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -241,19 +270,19 @@ def main() -> None:
         )
 
         if len(test_matches) == 0:
-            print("  No test matches found — skipping.")
+            print("  No test matches — skipping.")
             continue
 
         print(f"  Train: {len(train_df)}  |  Test: {len(test_matches)}")
         outcomes = test_matches["outcome"].to_numpy(int)
 
-        print("  Running Gaussian HMM …")
-        ghmm_probs = _run_gaussian_hmm(train_df, test_matches)
+        print("  Running Global Gaussian HMM …")
+        ghmm_probs = _run_global_hmm(train_df, test_matches)
 
-        print("  Running Elo baseline …")
+        print("  Running Elo …")
         elo_probs  = _run_elo(train_df, test_matches)
 
-        print("  Running Random Forest …")
+        print("  Running RF …")
         rf_probs   = _run_tree(train_df, test_matches, "rf")
 
         print("  Running XGBoost …")
@@ -262,42 +291,42 @@ def main() -> None:
         uniform = np.full((len(test_matches), 3), 1.0 / 3.0)
 
         results = {
-            "GaussianHMM": _metrics(ghmm_probs, outcomes),
-            "XGBoost":     _metrics(xgb_probs,  outcomes),
-            "RF":          _metrics(rf_probs,    outcomes),
-            "Elo":         _metrics(elo_probs,   outcomes),
-            "Uniform":     _metrics(uniform,     outcomes),
+            "GlobalGHMM": _metrics(ghmm_probs, outcomes),
+            "XGBoost":    _metrics(xgb_probs,  outcomes),
+            "RF":         _metrics(rf_probs,    outcomes),
+            "Elo":        _metrics(elo_probs,   outcomes),
+            "Uniform":    _metrics(uniform,     outcomes),
         }
         results_nodraw = {
             name: _metrics_no_draw(p, outcomes)
             for name, p in [
-                ("GaussianHMM", ghmm_probs), ("XGBoost", xgb_probs),
+                ("GlobalGHMM", ghmm_probs), ("XGBoost", xgb_probs),
                 ("RF", rf_probs), ("Elo", elo_probs), ("Uniform", uniform),
             ]
         }
         all_results[tag] = {"label": label, "models": results, "nodraw": results_nodraw}
 
-        header = f"  {'Model':<14} | {'Log-loss':>8} | {'Brier':>6} | {'Acc':>6} | {'RPS':>6}"
+        header = f"  {'Model':<13} | {'Log-loss':>8} | {'Brier':>6} | {'Acc':>6} | {'RPS':>6}"
         print(f"\n  All matches (n={len(outcomes)})")
         print(header)
         print("  " + "-" * (len(header) - 2))
         for name, m in results.items():
-            print(f"  {name:<14} | {m['log_loss']:>8.4f} | {m['brier']:>6.4f} "
+            print(f"  {name:<13} | {m['log_loss']:>8.4f} | {m['brier']:>6.4f} "
                   f"| {m['accuracy']:>6.4f} | {m['rps']:>6.4f}")
 
-        n_nodraw = int((outcomes != 1).sum())
-        print(f"\n  W/L only (draws excluded, n={n_nodraw})")
+        n_nd = int((outcomes != 1).sum())
+        print(f"\n  W/L only (n={n_nd})")
         print(header)
         print("  " + "-" * (len(header) - 2))
         for name, m in results_nodraw.items():
             if m:
-                print(f"  {name:<14} | {m['log_loss']:>8.4f} | {m['brier']:>6.4f} "
+                print(f"  {name:<13} | {m['log_loss']:>8.4f} | {m['brier']:>6.4f} "
                       f"| {m['accuracy']:>6.4f} | {m['rps']:>6.4f}")
 
-    out_json = out_dir / "metrics_gaussian.json"
-    with open(out_json, "w", encoding="utf-8") as fh:
-        json.dump(all_results, fh, indent=2)
-    print(f"\nAll metrics written to: {out_json}")
+    out_json = out_dir / "metrics_global_ghmm.json"
+    with open(out_json, "w") as f:
+        json.dump(all_results, f, indent=2)
+    print(f"\nAll metrics → {out_json}")
 
 
 if __name__ == "__main__":
