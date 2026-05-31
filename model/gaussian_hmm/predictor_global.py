@@ -72,6 +72,7 @@ class GlobalPredictor:
         p_opp  = self._state_dist(opponent, as_of_date)
 
         fv  = self._build_feature_vec(p_team, p_opp, elo_diff).reshape(1, -1)
+        fv  = np.nan_to_num(fv, nan=0.0, posinf=0.0, neginf=0.0)
         raw = self.head.predict_proba(fv)[0]
 
         # align to [Loss=0, Draw=1, Win=2]

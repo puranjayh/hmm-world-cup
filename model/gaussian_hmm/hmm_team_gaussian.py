@@ -22,9 +22,12 @@ ELO_STATE_SCALE = 600.0
 
 FEATURE_NAMES = [
     "elo_diff",
-    "rolling_win_rate_5",
-    "rolling_goal_diff_5",
     "tournament_weight",
+    "ewa_goal_diff",
+    "ewa_win_rate",
+    "neutral",
+    "opp_elo_strength_5",
+    "rolling_win_vs_strong_5",
 ]
 N_FEATURES = len(FEATURE_NAMES)
 
