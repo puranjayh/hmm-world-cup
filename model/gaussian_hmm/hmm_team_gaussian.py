@@ -1,16 +1,20 @@
 """
 hmm_team_gaussian.py — Per-team 3-state Gaussian HMM using continuous match features.
 
-Uses 'full' covariance with regularisation to avoid the hmmlearn bug where
-spherical/diag min_covar is not enforced during M-step, causing zero covars.
-Features are z-score normalised per team before fitting.
+Features used (all known BEFORE the match):
+    [elo_diff, rolling_win_rate_5, rolling_goal_diff_5, tournament_weight]
+
+Key design decisions:
+- NO post-match features (goal_diff, goals_for, goals_against removed)
+- Scaler is fitted on the GLOBAL training set (passed in), not per team —
+  this preserves inter-team signal (France elo_diff=+300 vs Panama elo_diff=-300)
+- Full covariance with regularisation to avoid hmmlearn's min_covar bug
 """
 
 import pickle
 import numpy as np
 from hmmlearn.hmm import GaussianHMM
 from scipy.special import logsumexp
-from sklearn.preprocessing import StandardScaler
 
 RANDOM_SEED     = 42
 EPS             = 1e-12
@@ -21,9 +25,6 @@ FEATURE_NAMES = [
     "rolling_win_rate_5",
     "rolling_goal_diff_5",
     "tournament_weight",
-    "goals_for",
-    "goals_against",
-    "goal_diff",
 ]
 N_FEATURES = len(FEATURE_NAMES)
 
@@ -31,9 +32,9 @@ N_FEATURES = len(FEATURE_NAMES)
 class TeamGaussianHMM:
     """A 3-state Gaussian HMM for one team's continuous feature sequences."""
 
-    def __init__(self, n_states: int = 3):
+    def __init__(self, n_states: int = 3, scaler=None):
         self.n_states = n_states
-        self.scaler   = StandardScaler()
+        self.scaler   = scaler   # global scaler fitted on full train set
         self.model    = GaussianHMM(
             n_components=n_states,
             covariance_type="full",
@@ -47,22 +48,21 @@ class TeamGaussianHMM:
     # ---- training ---------------------------------------------------------
     def fit(self, feature_matrix: np.ndarray) -> "TeamGaussianHMM":
         X = np.asarray(feature_matrix, dtype=float)
-        X = self.scaler.fit_transform(X)
+        if self.scaler is not None:
+            X = self.scaler.transform(X)   # global scale — preserves team differences
 
         self.model.fit(X, lengths=[len(X)])
 
-        # Clamp covars to ensure positive definiteness — hmmlearn
-        # doesn't always respect min_covar during M-step
-        d = X.shape[1]
+        # Regularise covariances — hmmlearn doesn't always respect min_covar
+        d   = X.shape[1]
         reg = 0.1 * np.eye(d)
-        self.model.covars_ = np.array([
-            c + reg for c in self.model.covars_
-        ])
+        self.model.covars_ = np.array([c + reg for c in self.model.covars_])
 
         self._relabel_states()
         return self
 
     def _relabel_states(self) -> None:
+        """Reorder states by mean elo_diff (feature 0) — lowest to highest."""
         order = np.argsort(self.model.means_[:, 0])
         self.model.startprob_ = self.model.startprob_[order]
         self.model.transmat_  = self.model.transmat_[order][:, order]
@@ -83,7 +83,11 @@ class TeamGaussianHMM:
         if prior_features.shape[0] == 0:
             pred = startprob.copy()
         else:
-            X         = self.scaler.transform(prior_features)
+            if self.scaler is not None:
+                X = self.scaler.transform(prior_features)
+            else:
+                X = prior_features
+
             log_lik   = self._log_likelihoods(X)
             log_start = np.log(startprob + EPS)
             log_trans = np.log(transmat  + EPS)
@@ -108,9 +112,9 @@ class TeamGaussianHMM:
         return pred
 
     def _log_likelihoods(self, X: np.ndarray) -> np.ndarray:
-        """Multivariate Gaussian log-likelihood with full covariance."""
-        means  = self.model.means_   # (n_states, d)
-        covars = self.model.covars_  # (n_states, d, d)
+        """Full covariance multivariate Gaussian log-likelihood → (T, n_states)."""
+        means  = self.model.means_
+        covars = self.model.covars_
         T, d   = X.shape
         log_lik = np.zeros((T, self.n_states), dtype=float)
 
@@ -118,17 +122,15 @@ class TeamGaussianHMM:
             mu  = means[s]
             cov = covars[s]
             try:
-                cov_inv  = np.linalg.inv(cov)
-                sign, log_det = np.linalg.slogdet(cov)
+                cov_inv          = np.linalg.inv(cov)
+                sign, log_det    = np.linalg.slogdet(cov)
                 if sign <= 0:
-                    raise np.linalg.LinAlgError("non-positive determinant")
+                    raise np.linalg.LinAlgError
             except np.linalg.LinAlgError:
-                # Degenerate covariance — fall back to identity
-                cov_inv  = np.eye(d)
-                log_det  = 0.0
-
-            diff = X - mu   # (T, d)
-            maha = np.sum(diff @ cov_inv * diff, axis=1)   # (T,)
+                cov_inv = np.eye(d)
+                log_det = 0.0
+            diff = X - mu
+            maha = np.sum(diff @ cov_inv * diff, axis=1)
             log_lik[:, s] = -0.5 * (d * np.log(2 * np.pi) + log_det + maha)
 
         return log_lik

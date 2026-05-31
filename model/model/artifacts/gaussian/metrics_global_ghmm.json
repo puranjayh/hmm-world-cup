@@ -1,0 +1,233 @@
+{
+  "wc_2018": {
+    "label": "2018 World Cup",
+    "models": {
+      "GlobalGHMM": {
+        "n": 49,
+        "log_loss": 1.0214,
+        "brier": 0.5973,
+        "accuracy": 0.551,
+        "rps": 0.2083
+      },
+      "XGBoost": {
+        "n": 49,
+        "log_loss": 1.036,
+        "brier": 0.5998,
+        "accuracy": 0.551,
+        "rps": 0.2096
+      },
+      "RF": {
+        "n": 49,
+        "log_loss": 0.9977,
+        "brier": 0.5927,
+        "accuracy": 0.5306,
+        "rps": 0.2122
+      },
+      "Elo": {
+        "n": 49,
+        "log_loss": 0.9731,
+        "brier": 0.5781,
+        "accuracy": 0.5306,
+        "rps": 0.1997
+      },
+      "Uniform": {
+        "n": 49,
+        "log_loss": 1.0986,
+        "brier": 0.6667,
+        "accuracy": 0.3673,
+        "rps": 0.2404
+      }
+    },
+    "nodraw": {
+      "GlobalGHMM": {
+        "n": 38,
+        "log_loss": 0.7988,
+        "brier": 0.4541,
+        "accuracy": 0.7105,
+        "rps": 0.2084
+      },
+      "XGBoost": {
+        "n": 38,
+        "log_loss": 0.7537,
+        "brier": 0.4253,
+        "accuracy": 0.7105,
+        "rps": 0.1976
+      },
+      "RF": {
+        "n": 38,
+        "log_loss": 0.7481,
+        "brier": 0.4491,
+        "accuracy": 0.6579,
+        "rps": 0.2069
+      },
+      "Elo": {
+        "n": 38,
+        "log_loss": 0.8463,
+        "brier": 0.4813,
+        "accuracy": 0.6842,
+        "rps": 0.2078
+      },
+      "Uniform": {
+        "n": 38,
+        "log_loss": 1.0986,
+        "brier": 0.6667,
+        "accuracy": 0.4737,
+        "rps": 0.2778
+      }
+    }
+  },
+  "wc_2022": {
+    "label": "2022 World Cup",
+    "models": {
+      "GlobalGHMM": {
+        "n": 48,
+        "log_loss": 1.0993,
+        "brier": 0.6361,
+        "accuracy": 0.5,
+        "rps": 0.2177
+      },
+      "XGBoost": {
+        "n": 48,
+        "log_loss": 1.2263,
+        "brier": 0.7452,
+        "accuracy": 0.4167,
+        "rps": 0.2738
+      },
+      "RF": {
+        "n": 48,
+        "log_loss": 1.2896,
+        "brier": 0.744,
+        "accuracy": 0.4167,
+        "rps": 0.2617
+      },
+      "Elo": {
+        "n": 48,
+        "log_loss": 1.0764,
+        "brier": 0.6319,
+        "accuracy": 0.5,
+        "rps": 0.2195
+      },
+      "Uniform": {
+        "n": 48,
+        "log_loss": 1.0986,
+        "brier": 0.6667,
+        "accuracy": 0.2708,
+        "rps": 0.2326
+      }
+    },
+    "nodraw": {
+      "GlobalGHMM": {
+        "n": 35,
+        "log_loss": 1.0195,
+        "brier": 0.5569,
+        "accuracy": 0.6857,
+        "rps": 0.2392
+      },
+      "XGBoost": {
+        "n": 35,
+        "log_loss": 1.1083,
+        "brier": 0.6361,
+        "accuracy": 0.5714,
+        "rps": 0.2953
+      },
+      "RF": {
+        "n": 35,
+        "log_loss": 1.108,
+        "brier": 0.6259,
+        "accuracy": 0.5429,
+        "rps": 0.275
+      },
+      "Elo": {
+        "n": 35,
+        "log_loss": 0.9809,
+        "brier": 0.5458,
+        "accuracy": 0.6857,
+        "rps": 0.2411
+      },
+      "Uniform": {
+        "n": 35,
+        "log_loss": 1.0986,
+        "brier": 0.6667,
+        "accuracy": 0.3714,
+        "rps": 0.2778
+      }
+    }
+  },
+  "all_2024": {
+    "label": "All 2024 Internationals",
+    "models": {
+      "GlobalGHMM": {
+        "n": 160,
+        "log_loss": 1.0393,
+        "brier": 0.6252,
+        "accuracy": 0.475,
+        "rps": 0.2002
+      },
+      "XGBoost": {
+        "n": 160,
+        "log_loss": 1.0627,
+        "brier": 0.6409,
+        "accuracy": 0.45,
+        "rps": 0.2057
+      },
+      "RF": {
+        "n": 160,
+        "log_loss": 1.3187,
+        "brier": 0.7662,
+        "accuracy": 0.4062,
+        "rps": 0.2424
+      },
+      "Elo": {
+        "n": 160,
+        "log_loss": 1.0424,
+        "brier": 0.626,
+        "accuracy": 0.4562,
+        "rps": 0.2009
+      },
+      "Uniform": {
+        "n": 160,
+        "log_loss": 1.0986,
+        "brier": 0.6667,
+        "accuracy": 0.2875,
+        "rps": 0.2226
+      }
+    },
+    "nodraw": {
+      "GlobalGHMM": {
+        "n": 107,
+        "log_loss": 0.9318,
+        "brier": 0.5365,
+        "accuracy": 0.6262,
+        "rps": 0.226
+      },
+      "XGBoost": {
+        "n": 107,
+        "log_loss": 0.9115,
+        "brier": 0.5255,
+        "accuracy": 0.6542,
+        "rps": 0.2255
+      },
+      "RF": {
+        "n": 107,
+        "log_loss": 1.1195,
+        "brier": 0.6338,
+        "accuracy": 0.5234,
+        "rps": 0.2585
+      },
+      "Elo": {
+        "n": 107,
+        "log_loss": 0.9022,
+        "brier": 0.5143,
+        "accuracy": 0.6822,
+        "rps": 0.2229
+      },
+      "Uniform": {
+        "n": 107,
+        "log_loss": 1.0986,
+        "brier": 0.6667,
+        "accuracy": 0.4299,
+        "rps": 0.2778
+      }
+    }
+  }
+}
