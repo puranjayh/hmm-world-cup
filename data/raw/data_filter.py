@@ -142,11 +142,36 @@ team_df['rolling_win_vs_strong_5'] = (
     team_df.groupby('team')['win_vs_strong']
     .transform(lambda x: x.shift().rolling(5, min_periods=2).mean())
 ).fillna(team_df['rolling_win_rate_5'])   # fallback to overall win rate
+# ── Rolling volatility features (NO LEAKAGE) ───────────────────────────────
 
+team_df['rolling_goal_diff_std_5'] = (
+    team_df.groupby('team')['goal_diff']
+    .transform(lambda x: x.shift().rolling(5).std())
+)
+
+team_df['rolling_win_rate_std_5'] = (
+    team_df.groupby('team')['win']
+    .transform(lambda x: x.shift().rolling(5).std())
+)
+
+# ── Days since previous match (NO LEAKAGE) ─────────────────────────────────
+
+team_df['days_since_last_match'] = (
+    team_df.groupby('team')['date']
+    .diff()
+    .dt.days
+)
+
+# ── EWA momentum features (NO LEAKAGE) ─────────────────────────────────────
+
+team_df['ewa_win_rate_momentum'] = (
+    team_df.groupby('team')['ewa_win_rate']
+    .transform(lambda x: x - x.shift(5))
+)
+
+team_df['ewa_goal_diff_momentum'] = (
+    team_df.groupby('team')['ewa_goal_diff']
+    .transform(lambda x: x - x.shift(5))
+)
 team_df.to_csv('filtered_matches.csv', index=False)
 
-print("Done. Columns:", team_df.columns.tolist())
-print("Shape:", team_df.shape)
-print("NaNs in new features:")
-new_cols = ['ewa_win_rate', 'ewa_goal_diff', 'opp_elo_strength_5', 'rolling_win_vs_strong_5']
-print(team_df[new_cols].isna().sum())

@@ -177,6 +177,14 @@ def _run_global_hmm(train_df, test_matches):
           f"{len(lengths)} team sequences …")
     hmm = GlobalGaussianHMM(n_states=N_STATES)
     hmm.fit(X_all, lengths=lengths)
+    print("\n===== STATE MEANS =====")
+    for i, mean in enumerate(hmm.model.means_):
+        print(f"State {i}:")
+        for feat, val in zip(FEATURE_NAMES, mean):
+            print(f"  {feat}: {val:.3f}")
+
+    print("\n===== TRANSITION MATRIX =====")
+    print(np.round(hmm.model.transmat_, 3))
 
     # 3. Train logistic head on last 40% of training matches
     print("  Training logistic head …")

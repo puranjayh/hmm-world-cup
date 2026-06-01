@@ -15,6 +15,7 @@ two teams' state distributions directly from labelled match outcomes.
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
 
 from model.gaussian_hmm.hmm_global import GlobalGaussianHMM, FEATURE_NAMES
 
