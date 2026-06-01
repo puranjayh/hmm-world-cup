@@ -67,7 +67,6 @@ TREE_FEATURES = [
     "neutral",
     "ewa_win_rate",
     "ewa_goal_diff",
-    "opp_elo_strength_5",
     "rolling_win_vs_strong_5",
 ]
 
@@ -139,7 +138,7 @@ def _build_head_features(train_df: pd.DataFrame,
     unique = _unique_matches(train_df).dropna(subset=["outcome", "elo_diff"])
     # Use last 40% of matches for head training (chronological)
     n_head = max(int(len(unique) * 0.4), 50)
-    head_matches = unique.iloc[-n_head:]
+    head_matches = unique
 
     X_list, y_list = [], []
     for _, row in head_matches.iterrows():

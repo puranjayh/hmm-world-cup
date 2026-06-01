@@ -21,13 +21,11 @@ EPS             = 1e-12
 ELO_STATE_SCALE = 600.0
 
 FEATURE_NAMES = [
-    "elo_diff",
-    "tournament_weight",
-    "ewa_goal_diff",
     "ewa_win_rate",
-    "neutral",
+    "ewa_goal_diff",
+    "rolling_win_vs_strong_5",
+    "tournament_weight",
     "opp_elo_strength_5",
-    "win_vs_strong",
 ]
 N_FEATURES = len(FEATURE_NAMES)
 
@@ -35,7 +33,7 @@ N_FEATURES = len(FEATURE_NAMES)
 class TeamGaussianHMM:
     """A 3-state Gaussian HMM for one team's continuous feature sequences."""
 
-    def __init__(self, n_states: int = 3, scaler=None):
+    def __init__(self, n_states: int = 5, scaler=None):
         self.n_states = n_states
         self.scaler   = scaler   # global scaler fitted on full train set
         self.model    = GaussianHMM(

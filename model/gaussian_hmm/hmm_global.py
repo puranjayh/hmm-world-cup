@@ -40,16 +40,15 @@ RANDOM_SEED     = 42
 EPS             = 1e-12
 
 FEATURE_NAMES = [
-    "elo_diff",
-    "tournament_weight",
     "ewa_win_rate",
     "ewa_goal_diff",
-    "neutral",
+    "rolling_win_vs_strong_5",
+    "tournament_weight",
     "opp_elo_strength_5",
-    "win_vs_strong",
+    "elo_diff",
 ]
 N_FEATURES = len(FEATURE_NAMES)
-N_STATES   = 3   # global match regimes
+N_STATES   = 5   # global match regimes
 
 
 class GlobalGaussianHMM:

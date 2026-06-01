@@ -18,7 +18,7 @@ from sklearn.linear_model import LogisticRegression
 
 from model.gaussian_hmm.hmm_global import GlobalGaussianHMM, FEATURE_NAMES
 
-WINDOW = 10   # last N matches used for state inference
+WINDOW = 20   # last N matches used for state inference
 
 
 class GlobalPredictor:
