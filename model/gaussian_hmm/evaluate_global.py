@@ -216,7 +216,8 @@ def _run_global_hmm(train_df, test_matches):
     for i, (_, row) in enumerate(test_matches.iterrows()):
         r = predictor.predict(
             row["team"], row["opponent"], row["date"],
-            elo_ratings=elo_ratings
+            elo_ratings=elo_ratings,
+            elo_diff=float(row["elo_diff"]),
         )
         probs[i] = [r["Loss"], r["Draw"], r["Win"]]
 
@@ -346,7 +347,7 @@ def main():
     out_json = out_dir / "metrics_global_ghmm.json"
     with open(out_json, "w") as f:
         json.dump(all_results, f, indent=2)
-    print(f"\nAll metrics → {out_json}")
+    print(f"\nAll metrics written to: {out_json}")
 
 
 if __name__ == "__main__":

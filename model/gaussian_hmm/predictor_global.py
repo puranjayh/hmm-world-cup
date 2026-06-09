@@ -65,9 +65,13 @@ class GlobalPredictor:
         return np.concatenate([outer, [elo_diff, elo_diff ** 2, abs(elo_diff)]])
 
     def predict(self, team: str, opponent: str, as_of_date,
-                elo_ratings: dict | None = None) -> dict:
+                elo_ratings: dict | None = None,
+                elo_diff: float | None = None) -> dict:
         elo = elo_ratings or {}
-        elo_diff = elo.get(team, 0.0) - elo.get(opponent, 0.0)
+        if elo_diff is None:
+            elo_diff = elo.get(team, 0.0) - elo.get(opponent, 0.0)
+        else:
+            elo_diff = float(elo_diff)
 
         p_team = self._state_dist(team, as_of_date)
         p_opp  = self._state_dist(opponent, as_of_date)
