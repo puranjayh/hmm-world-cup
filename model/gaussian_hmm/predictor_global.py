@@ -14,8 +14,6 @@ two teams' state distributions directly from labelled match outcomes.
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
 
 from model.gaussian_hmm.hmm_global import GlobalGaussianHMM, FEATURE_NAMES
 
@@ -26,7 +24,7 @@ class GlobalPredictor:
 
     def __init__(self,
                  global_hmm: GlobalGaussianHMM,
-                 head: LogisticRegression,
+                 head,
                  history_df: pd.DataFrame):
         self.hmm     = global_hmm
         self.head    = head
@@ -60,7 +58,7 @@ class GlobalPredictor:
                            p_team: np.ndarray,
                            p_opp: np.ndarray,
                            elo_diff: float) -> np.ndarray:
-        """Flatten outer product + elo features."""
+        """Flatten outer product + Elo features."""
         outer = np.outer(p_team, p_opp).ravel()   # (n_states^2,)
         return np.concatenate([outer, [elo_diff, elo_diff ** 2, abs(elo_diff)]])
 

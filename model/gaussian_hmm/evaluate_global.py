@@ -135,18 +135,15 @@ def _build_head_features(train_df: pd.DataFrame,
         feats = rec["features"][max(0, idx - WINDOW): idx]
         return hmm.forward_state_dist(feats)
 
-    unique = _unique_matches(train_df).dropna(subset=["outcome", "elo_diff"])
-    # Use last 40% of matches for head training (chronological)
-    n_head = max(int(len(unique) * 0.4), 50)
-    head_matches = unique
+    head_matches = _unique_matches(train_df).dropna(subset=["outcome", "elo_diff"])
 
+    feature_builder = GlobalPredictor(hmm, head=None, history_df=sorted_df)
     X_list, y_list = [], []
     for _, row in head_matches.iterrows():
         p_t = state_dist(row["team"],     row["date"])
         p_o = state_dist(row["opponent"], row["date"])
         elo_diff = float(row["elo_diff"])
-        outer    = np.outer(p_t, p_o).ravel()
-        fv       = np.concatenate([outer, [elo_diff, elo_diff**2, abs(elo_diff)]])
+        fv = feature_builder._build_feature_vec(p_t, p_o, elo_diff)
         X_list.append(fv)
         y_list.append(int(row["outcome"]))
 
@@ -186,11 +183,10 @@ def _run_global_hmm(train_df, test_matches):
     print("\n===== TRANSITION MATRIX =====")
     print(np.round(hmm.model.transmat_, 3))
 
-    # 3. Train logistic head on last 40% of training matches
-    print("  Training logistic head …")
+    # 3. Train the compact logistic head.
+    print("  Training compact logistic head ...")
     X_head, y_head = _build_head_features(train_df, hmm)
-    # Fill NaNs from new rolling features before fitting head
-    X_head = np.nan_to_num(X_head, nan=0.0)
+    X_head = np.nan_to_num(X_head, nan=0.0, posinf=0.0, neginf=0.0)
 
     head = LogisticRegression(max_iter=1000, C=1.0, random_state=RANDOM_SEED)
     head.fit(X_head, y_head)
@@ -252,7 +248,7 @@ def _run_tree(train_df, test_matches, model_type):
     avail   = [f for f in TREE_FEATURES if f in train_df.columns]
     train_u = _unique_matches(train_df).dropna(subset=avail + ["outcome"])
     clf = (
-        RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
+        RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=1)
         if model_type == "rf"
         else XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.05,
                            use_label_encoder=False, eval_metric="mlogloss",
