@@ -10,24 +10,37 @@ Hidden states represent global "match regimes":
 
 This sidesteps the per-team state comparability problem — all teams live in
 the same state space, and the joint tensor is replaced by a direct logistic
-regression from (state, elo_diff) → P(outcome).
+regression from (state_features, elo_diff) → P(outcome).
 
 Prediction pipeline
 -------------------
 1. For a match (team A vs team B on date D):
    a. Take the last K matches for team A before date D as observations.
-   b. Run the forward algorithm to get P(state | team A's recent history).
+   b. Run the forward algorithm to get the full posterior summary for team A.
    c. Do the same for team B.
-2. Combine state distributions + elo_diff in a logistic regression head
+2. Combine posterior summaries + elo_diff in a logistic regression head
    trained on held-out training data.
+
+Posterior summary vector (per team, produced by posterior_features())
+----------------------------------------------------------------------
+For an N-state HMM the summary has N + 2 dimensions:
+    [0 : N]   p       — predictive state distribution
+    [N]       max_p   — peak state probability (confidence)
+    [N+1]     entropy — Shannon entropy of p (uncertainty)
+
+Note: p_next and delta were removed — they are linear functions of p
+given fixed T, so they add no information to the logistic head.
 
 Features (all pre-match, no leakage)
 -------------------------------------
 Per match row (from team's perspective):
-    - elo_diff           : team_elo - opponent_elo
-    - rolling_win_rate_5 : win rate over last 5 matches
-    - rolling_goal_diff_5: avg goal diff over last 5 matches
-    - tournament_weight  : match importance (5=WC, 1=friendly)
+    - ewa_win_rate
+    - ewa_goal_diff
+    - rolling_win_vs_strong_5
+    - rolling_goal_diff_std_5
+    - rolling_win_rate_std_5
+    - ewa_win_rate_momentum
+    - ewa_goal_diff_momentum
 """
 
 import pickle
@@ -47,11 +60,31 @@ FEATURE_NAMES = [
     'rolling_win_rate_std_5',
     'ewa_win_rate_momentum',
     'ewa_goal_diff_momentum'
-    'tournament_weight'
-    'days_since_last_match'
 ]
 N_FEATURES = len(FEATURE_NAMES)
 N_STATES   = 7   # global match regimes
+
+# Tournament weights used during HMM fitting to up-weight competitive matches.
+# Any tournament not listed defaults to 1.0 (friendly-level).
+TOURNAMENT_WEIGHTS = {
+    "FIFA World Cup":               5.0,
+    "UEFA Euro":                    4.5,
+    "Copa América":                 4.5,
+    "Africa Cup of Nations":        4.0,
+    "AFC Asian Cup":                4.0,
+    "CONCACAF Gold Cup":            3.5,
+    "FIFA World Cup qualification": 3.0,
+    "UEFA Nations League":          2.5,
+    "Friendly":                     0.5,   # actively down-weighted
+}
+
+
+def _tournament_sample_weight(tournament_col: np.ndarray) -> np.ndarray:
+    """Convert a string array of tournament names to fitting sample weights."""
+    return np.array(
+        [TOURNAMENT_WEIGHTS.get(t, 1.0) for t in tournament_col],
+        dtype=float,
+    )
 
 
 class GlobalGaussianHMM:
@@ -62,36 +95,76 @@ class GlobalGaussianHMM:
         self.scaler   = StandardScaler()
         self.model    = GaussianHMM(
             n_components=n_states,
-            covariance_type="diag",  # diag: n_states*n_features params vs full: n_states*n_features^2
+            covariance_type="diag",
             n_iter=500,
             tol=1e-4,
             random_state=RANDOM_SEED,
             init_params="stmc",
-            min_covar=1.0,           # strong floor on variance — prevents collapse with 9 features
+            min_covar=1.0,
         )
 
-    def fit(self, X: np.ndarray, lengths: list) -> "GlobalGaussianHMM":
+    # ------------------------------------------------------------------
+    # Fitting
+    # ------------------------------------------------------------------
+
+    def fit(
+        self,
+        X: np.ndarray,
+        lengths: list,
+        sample_weight: np.ndarray | None = None,
+    ) -> "GlobalGaussianHMM":
         """
-        X       : (total_matches, N_FEATURES) — all training matches concatenated
-        lengths : list of ints — number of matches per team sequence
+        X             : (total_matches, N_FEATURES) — all training matches concatenated
+        lengths       : list of ints — number of matches per team sequence
+        sample_weight : (total_matches,) optional per-observation weights.
+                        Competitive matches should have higher weights so the
+                        HMM learns regime structure from meaningful fixtures
+                        rather than friendlies.  If None, all weights = 1.
         """
         X = np.asarray(X, dtype=float)
-        X = self.scaler.fit_transform(X)
+        X_scaled = self.scaler.fit_transform(X)
 
-        self.model.fit(X, lengths=lengths)
+        if sample_weight is not None:
+            # hmmlearn does not natively support per-observation weights, so we
+            # approximate by repeating observations proportional to their weight.
+            # We round weights to the nearest integer (min 1) and replicate rows
+            # and update lengths accordingly.
+            w = np.asarray(sample_weight, dtype=float)
+            w = np.clip(np.round(w).astype(int), 1, None)
 
-        # Clamp diagonal variances — bypass hmmlearn's setter to avoid shape validation
+            X_rep, lengths_rep = [], []
+            ptr = 0
+            for seq_len in lengths:
+                seq_w  = w[ptr: ptr + seq_len]
+                seq_X  = X_scaled[ptr: ptr + seq_len]
+                rows   = np.repeat(seq_X, seq_w, axis=0)
+                X_rep.append(rows)
+                lengths_rep.append(len(rows))
+                ptr += seq_len
+
+            X_fit      = np.vstack(X_rep)
+            lengths_fit = lengths_rep
+        else:
+            X_fit      = X_scaled
+            lengths_fit = lengths
+
+        self.model.fit(X_fit, lengths=lengths_fit)
+
+        # Clamp diagonal variances
         clamped = np.maximum(self.model.covars_, 0.5)
         object.__setattr__(self.model, '_covars_', clamped)
 
-        # Fix degenerate transmat rows (zero sum = state never visited)
-        # Replace with uniform distribution so forward algorithm doesn't produce NaN
+        # Fix degenerate transmat rows
         tm = self.model.transmat_.copy()
         zero_rows = tm.sum(axis=1) == 0
         tm[zero_rows] = 1.0 / self.n_states
         self.model.transmat_ = tm
 
         return self
+
+    # ------------------------------------------------------------------
+    # Inference
+    # ------------------------------------------------------------------
 
     def state_sequence(self, X: np.ndarray) -> np.ndarray:
         """Viterbi decode — returns most likely state sequence."""
@@ -102,6 +175,7 @@ class GlobalGaussianHMM:
         """
         Run forward algorithm on sequence X, push one step ahead.
         Returns predictive state distribution P(next_state | X).
+        Shape: (n_states,)
         """
         if len(X) == 0:
             return np.full(self.n_states, 1.0 / self.n_states)
@@ -120,23 +194,50 @@ class GlobalGaussianHMM:
         pred = np.exp(log_pred)
         return pred / (pred.sum() + EPS)
 
-    def _log_likelihoods(self, X: np.ndarray) -> np.ndarray:
-        """Diagonal covariance log-likelihood → (T, n_states).
-        covars_ shape is (n_states, n_features) for diag.
+    def posterior_features(self, X: np.ndarray) -> np.ndarray:
         """
-        means  = self.model.means_    # (n_states, n_features)
-        covars = self.model.covars_   # (n_states, n_features)
+        Posterior summary vector for use as head features.
+
+        Returns a 1-D array of length N + 2:
+
+            [0 : N]   p       — predictive state distribution (forward output)
+            [N]       max_p   — peak probability (posterior confidence)
+            [N+1]     entropy — Shannon entropy of p in nats (posterior uncertainty)
+
+        p_next (= p @ T) and delta (= p_next - p) were removed because they are
+        deterministic linear functions of p given the fixed transition matrix T,
+        so they add no information beyond p while increasing dimensionality and
+        collinearity in the logistic head.
+        """
+        p       = self.forward_state_dist(X)                  # (N,)
+        max_p   = float(p.max())
+        entropy = float(-np.sum(p * np.log(p + EPS)))         # nats
+
+        return np.concatenate([p, [max_p, entropy]])
+
+    # ------------------------------------------------------------------
+    # Internal
+    # ------------------------------------------------------------------
+
+    def _log_likelihoods(self, X: np.ndarray) -> np.ndarray:
+        """Diagonal covariance log-likelihood → (T, n_states)."""
+        means  = self.model.means_
+        covars = self.model.covars_
         T, d   = X.shape
         log_lik = np.zeros((T, self.n_states), dtype=float)
 
         for s in range(self.n_states):
             mu  = means[s]
-            var = np.maximum(covars[s], EPS)   # (n_features,)
+            var = np.maximum(covars[s], EPS)
             diff = X - mu
             log_lik[:, s] = -0.5 * np.sum(
                 np.log(2 * np.pi * var) + (diff ** 2) / var, axis=1
             )
         return log_lik
+
+    # ------------------------------------------------------------------
+    # Persistence
+    # ------------------------------------------------------------------
 
     def save(self, path) -> None:
         with open(path, "wb") as f:

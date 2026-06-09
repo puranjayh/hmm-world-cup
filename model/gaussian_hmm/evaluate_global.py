@@ -3,8 +3,11 @@ evaluate_global.py — Benchmark the global Gaussian HMM against baselines.
 
 Architecture:
   - ONE GlobalGaussianHMM fitted on all training matches (learns match regimes)
-  - Per-match state distributions computed via forward algorithm (last 10 matches)
-  - LogisticRegression head: outer(p_A, p_B) + elo features → P(W/D/L)
+    - Competitive matches are up-weighted during HMM fitting; friendlies down-weighted
+  - Per-match posterior summary computed via forward algorithm (last 10 matches):
+      [p, max_p, entropy]  (N_STATES + 2 features per team)
+  - LogisticRegression head:
+      outer(p_A, p_B) + elo_diff + confidence/entropy/momentum terms → P(W/D/L)
   - Dynamic updating: completed results added to history before next prediction
 
 Run:
@@ -24,8 +27,16 @@ from xgboost import XGBClassifier
 
 from model.config import ARTIFACTS_DIR
 from model.data_loader import load_matches
-from model.gaussian_hmm.hmm_global import GlobalGaussianHMM, FEATURE_NAMES, N_STATES
+from model.gaussian_hmm.hmm_global import (
+    GlobalGaussianHMM,
+    FEATURE_NAMES,
+    N_STATES,
+    TOURNAMENT_WEIGHTS,
+    _tournament_sample_weight,
+)
 from model.gaussian_hmm.predictor_global import GlobalPredictor, WINDOW
+
+WINDOW = 2  # override: last N matches for state inference (10 ≈ one competitive cycle)
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", message=".*transmat_.*")
@@ -53,7 +64,7 @@ EVAL_RUNS = [
         "tag":          "all_2024",
         "train_cutoff": "2024-01-01",
         "test_filter":  lambda df: df[
-            (df["date"] >= "2024-01-01") & (df["date"] < "2025-01-01") & (df["tournament"] != "Friendly")            
+            (df["date"] >= "2024-01-01") & (df["date"] < "2025-01-01") 
         ],
         "label": "All 2024 Internationals",
     },
@@ -61,13 +72,19 @@ EVAL_RUNS = [
 
 TREE_FEATURES = [
     "elo_diff",
-    "rolling_win_rate_5",
-    "rolling_goal_diff_5",
     "tournament_weight",
     "neutral",
+    "days_since_last_match",
+    "rolling_win_rate_5",
+    "rolling_goal_diff_5",
     "ewa_win_rate",
     "ewa_goal_diff",
     "rolling_win_vs_strong_5",
+    "opp_elo_strength_5",
+    "rolling_goal_diff_std_5",
+    "rolling_win_rate_std_5",
+    "ewa_win_rate_momentum",
+    "ewa_goal_diff_momentum",
 ]
 
 # ---------------------------------------------------------------------------
@@ -107,18 +124,72 @@ def _align_classes(raw, classes, n):
 
 
 # ---------------------------------------------------------------------------
+# Feature vector construction
+# ---------------------------------------------------------------------------
+
+def _build_feature_vec(
+    hmm: GlobalGaussianHMM,
+    pf_team: np.ndarray,
+    pf_opp:  np.ndarray,
+    elo_diff: float,
+) -> np.ndarray:
+    """
+    Construct the full feature vector passed to the logistic head.
+
+    Each posterior summary pf_* has length N + 2:
+        p        (N)  — predictive state distribution
+        max_p    (1)  — posterior confidence (peak probability)
+        entropy  (1)  — posterior uncertainty (Shannon entropy, nats)
+
+    Feature vector layout:
+        outer(p_A, p_B).ravel()     (N²)  joint regime interaction
+        max_p_A, max_p_B            (2)   HMM confidence per team
+        entropy_A, entropy_B        (2)   HMM uncertainty per team
+        elo_diff                    (1)   rating difference
+        elo_diff * max_p_A          (1)   strength × regime confidence (team)
+        elo_diff * max_p_B          (1)   strength × regime confidence (opponent)
+
+    Total: N² + 7  (for N=7: 49 + 7 = 56 features)
+
+    The interaction terms elo_diff * max_p_* are the key addition: they let
+    the head distinguish "Elo-strong AND confidently in a dominant regime"
+    from "Elo-strong but posterior-uncertain", which neither the outer product
+    nor elo_diff alone can express.
+    """
+    N = hmm.n_states
+
+    p_A     = pf_team[:N]
+    max_p_A = pf_team[N]
+    ent_A   = pf_team[N + 1]
+
+    p_B     = pf_opp[:N]
+    max_p_B = pf_opp[N]
+    ent_B   = pf_opp[N + 1]
+
+    outer = np.outer(p_A, p_B).ravel()
+
+    return np.concatenate([
+        outer,                                 # (N²,)
+        [max_p_A, max_p_B],                    # (2,)
+        [ent_A,   ent_B],                      # (2,)
+        [elo_diff],                            # (1,)
+        [elo_diff * max_p_A],                  # (1,)  interaction
+        [elo_diff * max_p_B],                  # (1,)  interaction
+    ])
+
+
+# ---------------------------------------------------------------------------
 # Build logistic head training data from train_df
 # ---------------------------------------------------------------------------
 
-def _build_head_features(train_df: pd.DataFrame,
-                         hmm: GlobalGaussianHMM) -> tuple[np.ndarray, np.ndarray]:
+def _build_head_features(
+    train_df: pd.DataFrame,
+    hmm: GlobalGaussianHMM,
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    For each match in train_df (deduplicated), compute state distributions
-    using only prior matches, then build outer-product feature vectors.
-    Uses a 70/30 split: HMM trained on first 70%, head trained on last 30%
-    to avoid the HMM memorising its own training data.
+    For each match in train_df (deduplicated), compute posterior summary
+    using only prior matches, then build the full feature vector.
     """
-    # Build per-team lookup
     sorted_df = train_df.sort_values("date").reset_index(drop=True)
     per_team  = {}
     for team, grp in sorted_df.groupby("team", sort=False):
@@ -127,23 +198,24 @@ def _build_head_features(train_df: pd.DataFrame,
             "features": grp[FEATURE_NAMES].fillna(0).to_numpy(dtype=float),
         }
 
-    def state_dist(team, date):
+    def posterior(team, date):
         rec = per_team.get(team)
         if rec is None:
-            return np.full(hmm.n_states, 1.0 / hmm.n_states)
+            # No history: uniform state dist, max_p=1/N, entropy=log(N)
+            N = hmm.n_states
+            unif = np.full(N, 1.0 / N)
+            return np.concatenate([unif, [1.0 / N, np.log(N)]])
         idx   = np.searchsorted(rec["dates"], np.datetime64(pd.Timestamp(date)), side="left")
         feats = rec["features"][max(0, idx - WINDOW): idx]
-        return hmm.forward_state_dist(feats)
+        return hmm.posterior_features(feats)
 
     head_matches = _unique_matches(train_df).dropna(subset=["outcome", "elo_diff"])
 
-    feature_builder = GlobalPredictor(hmm, head=None, history_df=sorted_df)
     X_list, y_list = [], []
     for _, row in head_matches.iterrows():
-        p_t = state_dist(row["team"],     row["date"])
-        p_o = state_dist(row["opponent"], row["date"])
-        elo_diff = float(row["elo_diff"])
-        fv = feature_builder._build_feature_vec(p_t, p_o, elo_diff)
+        pt = posterior(row["team"],     row["date"])
+        po = posterior(row["opponent"], row["date"])
+        fv = _build_feature_vec(hmm, pt, po, float(row["elo_diff"]))
         X_list.append(fv)
         y_list.append(int(row["outcome"]))
 
@@ -155,25 +227,41 @@ def _build_head_features(train_df: pd.DataFrame,
 # ---------------------------------------------------------------------------
 
 def _run_global_hmm(train_df, test_matches):
-    # 1. Build sequences: one per team, chronological
-    per_team_feats = {}
-    lengths        = []
-    all_X          = []
+    # 1. Build per-team sequences
+    per_team_feats  = {}
+    lengths         = []
+    all_X           = []
+    all_weights     = []
+
+    tournament_col = train_df["tournament"].to_numpy() if "tournament" in train_df.columns else None
 
     for team, grp in train_df.groupby("team"):
-        feats = grp.sort_values("date")[FEATURE_NAMES].fillna(0).to_numpy(float)
+        grp_sorted = grp.sort_values("date")
+        feats = grp_sorted[FEATURE_NAMES].fillna(0).to_numpy(float)
         if len(feats) >= 5:
             per_team_feats[team] = feats
             all_X.append(feats)
             lengths.append(len(feats))
+            if tournament_col is not None:
+                w = _tournament_sample_weight(grp_sorted["tournament"].to_numpy())
+            else:
+                w = np.ones(len(feats))
+            all_weights.append(w)
 
     X_all = np.vstack(all_X)
+    W_all = np.concatenate(all_weights) if all_weights else None
 
-    # 2. Fit global HMM
+    # 2. Fit global HMM with competitive-match weighting
     print(f"  Fitting global HMM on {X_all.shape[0]} observations, "
           f"{len(lengths)} team sequences …")
+    if W_all is not None:
+        unique_w = np.unique(np.round(W_all).astype(int))
+        print(f"  Sample weight range: [{W_all.min():.1f}, {W_all.max():.1f}]  "
+              f"(rounded int values: {unique_w})")
+
     hmm = GlobalGaussianHMM(n_states=N_STATES)
-    hmm.fit(X_all, lengths=lengths)
+    hmm.fit(X_all, lengths=lengths, sample_weight=W_all)
+
     print("\n===== STATE MEANS =====")
     for i, mean in enumerate(hmm.model.means_):
         print(f"State {i}:")
@@ -183,14 +271,16 @@ def _run_global_hmm(train_df, test_matches):
     print("\n===== TRANSITION MATRIX =====")
     print(np.round(hmm.model.transmat_, 3))
 
-    # 3. Train the compact logistic head.
-    print("  Training compact logistic head ...")
+    # 3. Train logistic head on richer posterior features
+    print("  Training logistic head on posterior summary features …")
     X_head, y_head = _build_head_features(train_df, hmm)
     X_head = np.nan_to_num(X_head, nan=0.0, posinf=0.0, neginf=0.0)
 
-    head = LogisticRegression(max_iter=1000, C=1.0, random_state=RANDOM_SEED)
+    head = LogisticRegression(max_iter=2000, C=1.0, random_state=RANDOM_SEED)
     head.fit(X_head, y_head)
-    print(f"  Head trained on {len(y_head)} matches")
+    n_feats = X_head.shape[1]
+    print(f"  Head trained on {len(y_head)} matches, {n_feats} features "
+          f"(N²={N_STATES**2} joint + 2 conf + 2 ent + 1 elo + 2 elo×conf interactions)")
 
     # 4. Elo ratings
     elo_ratings = (
@@ -200,36 +290,56 @@ def _run_global_hmm(train_df, test_matches):
         .to_dict()
     )
 
-    # 5. Dynamic prediction
-    running_history = train_df.copy()
-    predictor = GlobalPredictor(
-        global_hmm=hmm,
-        head=head,
-        history_df=running_history,
-    )
+    # 5. Dynamic prediction — build per-team history lookup
+    sorted_train = train_df.sort_values("date").reset_index(drop=True)
+    per_team_hist = {}
+    for team, grp in sorted_train.groupby("team", sort=False):
+        per_team_hist[team] = {
+            "dates":    grp["date"].to_numpy(),
+            "features": grp[FEATURE_NAMES].fillna(0).to_numpy(dtype=float),
+        }
+
+    def posterior_for(team, date):
+        rec = per_team_hist.get(team)
+        if rec is None:
+            N = hmm.n_states
+            unif = np.full(N, 1.0 / N)
+            return np.concatenate([unif, [1.0 / N, np.log(N)]])
+        idx   = np.searchsorted(rec["dates"], np.datetime64(pd.Timestamp(date)), side="left")
+        feats = rec["features"][max(0, idx - WINDOW): idx]
+        return hmm.posterior_features(feats)
+
+    def append_to_history(team, new_row_dict):
+        """Add a single observed match to the running per-team lookup."""
+        rec = per_team_hist.setdefault(team, {"dates": np.array([], dtype="datetime64"),
+                                               "features": np.empty((0, len(FEATURE_NAMES)))})
+        new_date = np.array([np.datetime64(pd.Timestamp(new_row_dict["date"]))],
+                            dtype="datetime64")
+        new_feat = np.array([[float(new_row_dict.get(f, 0) or 0) for f in FEATURE_NAMES]])
+        rec["dates"]    = np.concatenate([rec["dates"],    new_date])
+        rec["features"] = np.vstack(     [rec["features"], new_feat])
 
     probs = np.zeros((len(test_matches), 3), float)
     for i, (_, row) in enumerate(test_matches.iterrows()):
-        r = predictor.predict(
-            row["team"], row["opponent"], row["date"],
-            elo_ratings=elo_ratings,
-            elo_diff=float(row["elo_diff"]),
-        )
-        probs[i] = [r["Loss"], r["Draw"], r["Win"]]
+        pt = posterior_for(row["team"],     row["date"])
+        po = posterior_for(row["opponent"], row["date"])
+        fv = _build_feature_vec(hmm, pt, po, float(row["elo_diff"]))
+        fv = np.nan_to_num(fv, nan=0.0, posinf=0.0, neginf=0.0)
 
-        # Append result to running history
-        new_rows = pd.DataFrame([
-            row.to_dict(),
-            {**row.to_dict(), "team": row["opponent"], "opponent": row["team"],
-             "outcome": 2 - int(row["outcome"])},
-        ])
-        running_history = pd.concat(
-            [running_history, new_rows], ignore_index=True
-        ).sort_values("date").reset_index(drop=True)
-        predictor.update_history(running_history)
+        raw = head.predict_proba(fv.reshape(1, -1))
+        aligned = _align_classes(raw, head.classes_, n=1)[0]
+        probs[i] = aligned   # [Loss, Draw, Win]
+
+        # Dynamic update: add both perspectives to running history
+        row_dict = row.to_dict()
+        append_to_history(row["team"],     row_dict)
+        opp_dict = {**row_dict,
+                    "team":     row["opponent"],
+                    "opponent": row["team"],
+                    "outcome":  2 - int(row["outcome"])}
+        append_to_history(row["opponent"], opp_dict)
 
     return probs
-
 
 
 # ---------------------------------------------------------------------------
