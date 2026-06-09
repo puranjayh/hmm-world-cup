@@ -21,15 +21,12 @@ EPS             = 1e-12
 ELO_STATE_SCALE = 600.0
 
 FEATURE_NAMES = [
-    'ewa_win_rate',
-    'ewa_goal_diff',
-    'rolling_win_vs_strong_5',
-    'rolling_goal_diff_std_5',
-    'rolling_win_rate_std_5',
-    'ewa_win_rate_momentum',
-    'ewa_goal_diff_momentum'
-    'tournament_weight'
-    'days_since_last_match'
+    'goal_diff',
+    'result',
+    'elo_diff',
+    'win_vs_strong',
+    'tournament_weight',
+    'days_since_last_match',
 ]
 N_FEATURES = len(FEATURE_NAMES)
 
