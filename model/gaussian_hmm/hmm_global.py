@@ -47,6 +47,8 @@ FEATURE_NAMES = [
     'rolling_win_rate_std_5',
     'ewa_win_rate_momentum',
     'ewa_goal_diff_momentum'
+    'tournament_weight'
+    'days_since_last_match'
 ]
 N_FEATURES = len(FEATURE_NAMES)
 N_STATES   = 7   # global match regimes

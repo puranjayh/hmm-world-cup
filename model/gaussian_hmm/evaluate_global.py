@@ -53,7 +53,7 @@ EVAL_RUNS = [
         "tag":          "all_2024",
         "train_cutoff": "2024-01-01",
         "test_filter":  lambda df: df[
-            (df["date"] >= "2024-01-01") & (df["date"] < "2025-01-01")
+            (df["date"] >= "2024-01-01") & (df["date"] < "2025-01-01") & (df["tournament"] != "Friendly")            
         ],
         "label": "All 2024 Internationals",
     },

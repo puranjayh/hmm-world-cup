@@ -64,6 +64,13 @@ team_df = team_df[
     team_df['opponent'].isin(top_teams)
 ]
 team_df = team_df.sort_values(['team', 'date']).reset_index(drop=True)
+# ── Days since previous match (NO LEAKAGE) ─────────────────────────────────
+
+team_df['days_since_last_match'] = (
+    team_df.groupby('team')['date']
+    .diff()
+    .dt.days
+)
 
 # ── Rolling window features (standard) ──────────────────────────────────────
 team_df['rolling_goal_diff_5'] = (
