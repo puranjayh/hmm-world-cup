@@ -3,7 +3,7 @@ import numpy as np
 
 df = pd.read_csv('all_matches.csv')
 df['date'] = pd.to_datetime(df['date'])
-df = df[df['date'] >= '2008-01-01']
+df = df[df['date'] >= '2002-01-01']
 
 team_rows = []
 

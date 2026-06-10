@@ -43,7 +43,7 @@ from model.gaussian_hmm.utils import (
     _train_draw_model,
 )
 
-WINDOW = 2  # last N matches for state inference — empirically best
+WINDOW = 20  # last N matches for state inference — empirically best
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", message=".*transmat_.*")

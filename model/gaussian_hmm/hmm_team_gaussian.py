@@ -40,7 +40,7 @@ class TeamGaussianHMM:
         self.model    = GaussianHMM(
             n_components=n_states,
             covariance_type="full",
-            n_iter=200,
+            n_iter=500,
             tol=1e-3,
             random_state=RANDOM_SEED,
             init_params="stmc",
