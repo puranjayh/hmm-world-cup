@@ -43,7 +43,7 @@ from model.gaussian_hmm.utils import (
     _train_draw_model,
 )
 
-WINDOW = 7  # last N matches for state inference — empirically best
+WINDOW = 20  # last N matches for state inference — empirically best
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", message=".*transmat_.*")
@@ -72,16 +72,6 @@ EVAL_RUNS = [
         "save_artifacts": False,
     },
     {
-        "tag":           "2024_all_matches",
-        "train_cutoff":  "2024-01-01",
-        "test_filter":   lambda df: df[
-            (df["date"] >= "2024-01-01") & (df["date"] <= "2024-12-31")
-        ],
-        "label":         "2024 All Matches",
-        "is_tournament": False,
-        "save_artifacts": False,
-    },
-    {
         "tag":          "euro_2024",
         "train_cutoff": "2024-06-14",
         "test_filter":  lambda df: df[
@@ -97,14 +87,7 @@ EVAL_RUNS = [
         ],
         "label": "Copa América 2024",
     },
-    {
-        "tag":          "afcon_2024",
-        "train_cutoff": "2024-01-13",
-        "test_filter":  lambda df: df[
-            (df["date"] >= "2024-01-13") & (df["date"] <= "2024-02-11")
-        ],
-        "label": "AFCON 2024",
-    }
+
 ]   
 
 TREE_FEATURES = [
