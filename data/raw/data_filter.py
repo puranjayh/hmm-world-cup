@@ -3,12 +3,15 @@ import numpy as np
 
 df = pd.read_csv('all_matches.csv')
 df['date'] = pd.to_datetime(df['date'], format='mixed', dayfirst=True)
-df = df[df['date'] >= '2002-01-01']
+df = df[df['date'] >= '2008-01-01']
 
 # Normalise team names to match the simulator's conventions
 NAME_MAP = {'United States': 'USA'}
 df['home_team'] = df['home_team'].replace(NAME_MAP)
 df['away_team'] = df['away_team'].replace(NAME_MAP)
+
+# ── Deduplicate source matches (same date/home/away, different tournament name) ──
+df = df.drop_duplicates(subset=['date', 'home_team', 'away_team'], keep='first')
 
 team_rows = []
 
@@ -67,8 +70,11 @@ WC2026_TEAMS = [
 # Opponent can be anyone — their Elo comes from the eloratings merge (~240 teams).
 team_df = team_df[team_df['team'].isin(WC2026_TEAMS)]
 team_df = team_df.sort_values(['team', 'date']).reset_index(drop=True)
-# ── Days since previous match (NO LEAKAGE) ─────────────────────────────────
 
+# ── Outcome column (2=win, 1=draw, 0=loss) — required by evaluate_global.py ──
+team_df['outcome'] = team_df['result'].map({1: 2, 0: 1, -1: 0})
+
+# ── Days since previous match (NO LEAKAGE) ─────────────────────────────────
 team_df['days_since_last_match'] = (
     team_df.groupby('team')['date']
     .diff()
@@ -155,8 +161,8 @@ team_df['rolling_win_vs_strong_5'] = (
     team_df.groupby('team')['win_vs_strong']
     .transform(lambda x: x.shift().rolling(5, min_periods=2).mean())
 ).fillna(team_df['rolling_win_rate_5'])   # fallback to overall win rate
-# ── Rolling volatility features (NO LEAKAGE) ───────────────────────────────
 
+# ── Rolling volatility features (NO LEAKAGE) ────────────────────────────────
 team_df['rolling_goal_diff_std_5'] = (
     team_df.groupby('team')['goal_diff']
     .transform(lambda x: x.shift().rolling(5).std())
@@ -168,15 +174,13 @@ team_df['rolling_win_rate_std_5'] = (
 )
 
 # ── Days since previous match (NO LEAKAGE) ─────────────────────────────────
-
 team_df['days_since_last_match'] = (
     team_df.groupby('team')['date']
     .diff()
     .dt.days
 )
 
-# ── EWA momentum features (NO LEAKAGE) ─────────────────────────────────────
-
+# ── EWA momentum features (NO LEAKAGE) ──────────────────────────────────────
 team_df['ewa_win_rate_momentum'] = (
     team_df.groupby('team')['ewa_win_rate']
     .transform(lambda x: x - x.shift(5))
@@ -186,5 +190,5 @@ team_df['ewa_goal_diff_momentum'] = (
     team_df.groupby('team')['ewa_goal_diff']
     .transform(lambda x: x - x.shift(5))
 )
-team_df.to_csv('filtered_matches.csv', index=False)
 
+team_df.to_csv('filtered_matches.csv', index=False)

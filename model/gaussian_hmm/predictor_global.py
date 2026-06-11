@@ -33,7 +33,7 @@ from model.gaussian_hmm.utils import (
     ELO_SCALE,
 )
 
-WINDOW = 20   # last N matches used for state inference — empirically best
+WINDOW = 7   # last N matches used for state inference — empirically best
 
 
 class GlobalPredictor:
