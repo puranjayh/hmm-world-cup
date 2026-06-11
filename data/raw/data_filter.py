@@ -193,5 +193,11 @@ team_df['ewa_goal_diff_momentum'] = (
     team_df.groupby('team')['ewa_goal_diff']
     .transform(lambda x: x - x.shift(5))
 )
+# Instead of filtering to WC2026_TEAMS, keep all teams
+# that appear in the data with sufficient history
+team_df = team_df[
+    team_df.groupby("team")["team"]
+    .transform("count") >= 10  # at least 10 matches in dataset
+]
 
 team_df.to_csv('filtered_matches.csv', index=False)
