@@ -155,6 +155,43 @@ class GlobalPredictor:
     # Predict
     # ------------------------------------------------------------------
 
+    def predict_neutral(self,
+                        team:       str,
+                        opponent:   str,
+                        as_of_date,
+                        tournament: str = "",
+                        elo_diff:   float | None = None) -> dict:
+        """
+        Symmetric neutral-ground prediction: averages predict(A,B) and predict(B,A)
+        so the result is identical regardless of which team is listed first.
+        Win/Draw/Loss are all from `team`'s perspective.
+        """
+        ab = self.predict(team, opponent, as_of_date, tournament, elo_diff)
+        ba = self.predict(opponent, team, as_of_date, tournament,
+                          -elo_diff if elo_diff is not None else None)
+        def _avg(k_ab, k_ba):
+            return (ab[k_ab] + ba[k_ba]) / 2.0
+        return {
+            "Win":              _avg("Win",  "Loss"),
+            "Draw":             _avg("Draw", "Draw"),
+            "Loss":             _avg("Loss", "Win"),
+            "Win_raw":          _avg("Win_raw",  "Loss_raw"),
+            "Draw_raw":         _avg("Draw_raw", "Draw_raw"),
+            "Loss_raw":         _avg("Loss_raw", "Win_raw"),
+            "draw_prob_model":  None,
+            "state_team":       ab["state_team"],
+            "state_opp":        ab["state_opp"],
+            "conf_team":        ab["conf_team"],
+            "conf_opp":         ab["conf_opp"],
+            "entropy_team":     ab["entropy_team"],
+            "entropy_opp":      ab["entropy_opp"],
+            "elo_diff":         ab["elo_diff"],
+            "is_knockout":      ab["is_knockout"],
+            "tournament_weight": ab["tournament_weight"],
+            "max_prob":         max(_avg("Win", "Loss"), _avg("Draw", "Draw"),
+                                    _avg("Loss", "Win")),
+        }
+
     def predict(self,
                 team:        str,
                 opponent:    str,
@@ -172,7 +209,21 @@ class GlobalPredictor:
             elo_diff               — dynamic Elo diff used
             is_knockout            — 1 if knockout match
             max_prob               — max(Win, Draw, Loss) for confidence gating
+
+        Team ordering is normalised internally to match training convention
+        (alphabetically smaller team = team A in the feature vector), so
+        Win/Draw/Loss are always returned from `team`'s perspective regardless
+        of which name comes first alphabetically.
         """
+        # Normalise ordering to match training convention (alphabetical).
+        # If the caller passes (B, A) where B > A, swap internally and flip
+        # Win/Loss in the returned dict so callers always get `team`'s view.
+        swapped = team > opponent
+        if swapped:
+            team, opponent = opponent, team
+            if elo_diff is not None:
+                elo_diff = -elo_diff
+
         # Dynamic Elo
         r_team = self.live_elo.get(team,     self._default_elo)
         r_opp  = self.live_elo.get(opponent, self._default_elo)
@@ -217,6 +268,14 @@ class GlobalPredictor:
             )[0]
 
         N = self.hmm.n_states
+        # If we swapped for alphabetical normalisation, flip Win↔Loss back so
+        # the caller always receives probabilities from their `team`'s perspective.
+        if swapped:
+            final_probs = final_probs[[2, 1, 0]]
+            probs       = probs[[2, 1, 0]]
+            elo_diff    = -elo_diff
+            pf_team, pf_opp = pf_opp, pf_team
+
         return {
             # Final (blended) probabilities
             "Win":             float(final_probs[2]),

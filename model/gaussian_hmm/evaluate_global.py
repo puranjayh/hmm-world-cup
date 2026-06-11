@@ -242,15 +242,30 @@ def _build_head_features(
         pt = posterior(row["team"],     row["date"])
         po = posterior(row["opponent"], row["date"])
 
-        is_ko = _is_knockout(row.get("tournament", ""))
-        tw    = _tournament_weight_val(row.get("tournament", ""))
+        is_ko  = _is_knockout(row.get("tournament", ""))
+        tw     = _tournament_weight_val(row.get("tournament", ""))
+        elo_d  = float(row["elo_diff"])
+        out    = int(row["outcome"])
 
-        fv = _build_feature_vec(hmm, pt, po, float(row["elo_diff"]), is_ko, tw)
+        # Forward ordering: (team, opponent)
+        fv = _build_feature_vec(hmm, pt, po, elo_d, is_ko, tw)
         X_list.append(fv)
-        y_list.append(int(row["outcome"]))
-        elo_list.append(float(row["elo_diff"]))
+        y_list.append(out)
+        elo_list.append(elo_d)
         ent_a_list.append(float(pt[hmm.n_states + 1]))
         ent_b_list.append(float(po[hmm.n_states + 1]))
+        is_ko_list.append(is_ko)
+
+        # Mirror ordering: (opponent, team) with flipped outcome and negated elo_diff.
+        # This forces the outer-product weights to be position-invariant so no
+        # alphabetical ordering bias leaks into the head's learned coefficients.
+        flipped_out = 2 - out  # win↔loss, draw stays draw
+        fv_mirror = _build_feature_vec(hmm, po, pt, -elo_d, is_ko, tw)
+        X_list.append(fv_mirror)
+        y_list.append(flipped_out)
+        elo_list.append(-elo_d)
+        ent_a_list.append(float(po[hmm.n_states + 1]))
+        ent_b_list.append(float(pt[hmm.n_states + 1]))
         is_ko_list.append(is_ko)
 
     return (np.array(X_list), np.array(y_list),

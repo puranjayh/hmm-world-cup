@@ -40,9 +40,26 @@ import copy
 import json
 import pickle
 import random
+import sys
 import warnings
 from pathlib import Path
 from typing import Optional
+
+# Ensure the project package root (parent of the top-level `model` package) is
+# importable so absolute imports like `model.gaussian_hmm.predictor_global`
+# resolve regardless of the current working directory the script is run from.
+_PKG_ROOT = Path(__file__).resolve().parents[2]
+if str(_PKG_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PKG_ROOT))
+
+# The script prints Unicode box-drawing characters; force UTF-8 so it doesn't
+# crash on Windows consoles defaulting to cp1252.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
 import numpy as np
 import pandas as pd
@@ -53,12 +70,15 @@ warnings.filterwarnings("ignore")
 # ---------------------------------------------------------------------------
 # Paths — adjust to your project layout
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parent
-ARTIFACTS_DIR = PROJECT_ROOT / "artifacts" / "gaussian"
+# Use the project's single source of truth for paths so artifacts/data are
+# found regardless of the cwd the simulator is launched from.
+from model.config import ARTIFACTS_DIR as _MODEL_ARTIFACTS, DATA_CSV as _DATA_CSV
+
+ARTIFACTS_DIR = _MODEL_ARTIFACTS / "gaussian"
 HMM_PATH      = ARTIFACTS_DIR / "global_hmm.pkl"
 HEAD_PATH     = ARTIFACTS_DIR / "head.pkl"
 DRAW_PATH     = ARTIFACTS_DIR / "draw_model.pkl"   # optional
-HISTORY_CSV   = PROJECT_ROOT / "data" / "matches.csv"
+HISTORY_CSV   = _DATA_CSV                            # data/raw/filtered_matches.csv
 STATE_FILE    = ARTIFACTS_DIR / "wc2026_state.json"  # live checkpoint
 
 # ---------------------------------------------------------------------------
@@ -611,6 +631,8 @@ def main() -> None:
     parser.add_argument("--opponent",   type=str, default=None)
     parser.add_argument("--date",       type=str, default="2026-06-15")
     parser.add_argument("--tournament", type=str, default="FIFA World Cup")
+    parser.add_argument("--neutral", action="store_true",
+                        help="Average home/away perspectives for a neutral-ground prediction")
 
     # Append-result args
     parser.add_argument("--outcome", type=int, default=None,
@@ -656,10 +678,17 @@ def main() -> None:
     elif args.mode == "predict":
         if not args.team or not args.opponent:
             parser.error("--team and --opponent required for predict mode")
-        pred = predictor.predict(
-            team=args.team, opponent=args.opponent,
-            as_of_date=args.date, tournament=args.tournament,
-        )
+        if args.neutral:
+            pred = predictor.predict_neutral(
+                team=args.team, opponent=args.opponent,
+                as_of_date=args.date, tournament=args.tournament,
+            )
+            print("  (neutral-ground: averaged over both team orderings)")
+        else:
+            pred = predictor.predict(
+                team=args.team, opponent=args.opponent,
+                as_of_date=args.date, tournament=args.tournament,
+            )
         print_match_prediction(pred, args.team, args.opponent)
 
     # ── append_result ─────────────────────────────────────────────────────────
