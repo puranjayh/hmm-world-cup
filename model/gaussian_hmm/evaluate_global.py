@@ -43,7 +43,7 @@ from model.gaussian_hmm.utils import (
     _train_draw_model,
 )
 
-WINDOW = 20  # last N matches for state inference — empirically best
+WINDOW = 7  # last N matches for state inference — empirically best
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", message=".*transmat_.*")
@@ -65,10 +65,20 @@ EVAL_RUNS = [
         "tag":           "wc_2022",
         "train_cutoff":  "2022-11-19",
         "test_filter":   lambda df: df[
-            (df["date"] >= "2022-11-20") & (df["date"] <= "2022-12-18")
+            (df["date"] >= "2022-11-20") & (df["date"] <= "2022-12-18") & (df["tournament"] != "Friendly")
         ],
         "label":         "2022 World Cup",
         "is_tournament": True,
+        "save_artifacts": False,
+    },
+    {
+        "tag":           "2024_all_matches",
+        "train_cutoff":  "2024-01-01",
+        "test_filter":   lambda df: df[
+            (df["date"] >= "2024-01-01") & (df["date"] <= "2024-12-31")
+        ],
+        "label":         "2024 All Matches",
+        "is_tournament": False,
         "save_artifacts": False,
     },
     {
@@ -82,21 +92,13 @@ EVAL_RUNS = [
 ]
 
 TREE_FEATURES = [
-    "elo_diff",
-    "tournament_weight",
-    "neutral",
-    "days_since_last_match",
-    "rolling_win_rate_5",
-    "rolling_goal_diff_5",
-    "ewa_win_rate",
-    "ewa_goal_diff",
-    "rolling_win_vs_strong_5",
-    "opp_elo_strength_5",
-    "rolling_goal_diff_std_5",
-    "rolling_win_rate_std_5",
-    "ewa_win_rate_momentum",
-    "ewa_goal_diff_momentum",
-    "is_knockout",           # NEW
+    'ewa_win_rate',
+    'ewa_goal_diff',
+    'rolling_win_vs_strong_5',
+    'rolling_goal_diff_std_5',
+    'rolling_win_rate_std_5',
+    'ewa_win_rate_momentum',
+    'ewa_goal_diff_momentum'
 ]
 
 # ---------------------------------------------------------------------------
