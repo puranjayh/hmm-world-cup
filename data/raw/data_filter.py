@@ -2,8 +2,13 @@ import pandas as pd
 import numpy as np
 
 df = pd.read_csv('all_matches.csv')
-df['date'] = pd.to_datetime(df['date'])
+df['date'] = pd.to_datetime(df['date'], format='mixed', dayfirst=True)
 df = df[df['date'] >= '2002-01-01']
+
+# Normalise team names to match the simulator's conventions
+NAME_MAP = {'United States': 'USA'}
+df['home_team'] = df['home_team'].replace(NAME_MAP)
+df['away_team'] = df['away_team'].replace(NAME_MAP)
 
 team_rows = []
 
@@ -44,25 +49,23 @@ for _, row in df.iterrows():
 
 team_df = pd.DataFrame(team_rows)
 
-top_teams = [
-    "France", "Spain", "Argentina", "England",
-    "Portugal", "Brazil", "Netherlands", "Morocco",
-    "Belgium", "Germany", "Croatia", "Italy",
-    "Colombia", "Senegal", "Mexico", "United States",
-    "Uruguay", "Japan", "Switzerland", "Denmark",
-    "Iran", "Turkey", "Ecuador", "Austria",
-    "South Korea", "Nigeria", "Australia", "Algeria",
-    "Egypt", "Canada", "Norway", "Ukraine",
-    "Panama", "Ivory Coast", "Poland", "Russia",
-    "Wales", "Sweden", "Serbia", "Paraguay",
-    "Czechia", "Hungary", "Scotland", "Tunisia",
-    "Cameroon", "DR Congo", "Greece", "Slovakia",
-    "Venezuela", "Uzbekistan"
+WC2026_TEAMS = [
+    "Mexico", "USA", "Canada", "Colombia",
+    "Ecuador", "Uruguay", "Panama", "Bolivia",
+    "Argentina", "Chile", "Peru", "Venezuela",
+    "Brazil", "Paraguay", "Costa Rica", "Guatemala",
+    "France", "Belgium", "England", "Serbia",
+    "Portugal", "Spain", "Turkey", "Ukraine",
+    "Germany", "Netherlands", "Denmark", "Cameroon",
+    "Italy", "Croatia", "Switzerland", "Albania",
+    "Morocco", "Senegal", "South Africa", "Tunisia",
+    "Nigeria", "Egypt", "Algeria", "Ivory Coast",
+    "Japan", "South Korea", "Australia", "Saudi Arabia",
+    "Iran", "Uzbekistan", "Qatar", "Kyrgyzstan",
 ]
-team_df = team_df[
-    team_df['team'].isin(top_teams) &
-    team_df['opponent'].isin(top_teams)
-]
+# Keep any match where the team we're tracking is a WC 2026 participant.
+# Opponent can be anyone — their Elo comes from the eloratings merge (~240 teams).
+team_df = team_df[team_df['team'].isin(WC2026_TEAMS)]
 team_df = team_df.sort_values(['team', 'date']).reset_index(drop=True)
 # ── Days since previous match (NO LEAKAGE) ─────────────────────────────────
 
@@ -112,6 +115,9 @@ team_df = team_df.dropna(subset=['rolling_goal_diff_5', 'rolling_win_rate_5'])
 # ── Merge Elo ratings ────────────────────────────────────────────────────────
 elo_df = pd.read_csv("eloratings.csv")
 elo_df['date'] = pd.to_datetime(elo_df['date'], format='mixed')
+# Clean non-breaking spaces and normalise names to match match data
+elo_df['team'] = elo_df['team'].str.replace('\xa0', ' ', regex=False)
+elo_df['team'] = elo_df['team'].replace({'United States': 'USA'})
 team_df = team_df.sort_values('date')
 elo_df  = elo_df.sort_values('date')
 

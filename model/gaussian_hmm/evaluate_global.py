@@ -52,31 +52,32 @@ RANDOM_SEED = 42
 
 EVAL_RUNS = [
     {
-        "tag":          "wc_2018",
-        "train_cutoff": "2018-06-13",
-        "test_filter":  lambda df: df[
+        "tag":           "wc_2018",
+        "train_cutoff":  "2018-06-13",
+        "test_filter":   lambda df: df[
             (df["date"] >= "2018-06-14") & (df["date"] <= "2018-07-15")
         ],
-        "label": "2018 World Cup",
+        "label":         "2018 World Cup",
         "is_tournament": True,
+        "save_artifacts": False,
     },
     {
-        "tag":          "wc_2022",
-        "train_cutoff": "2022-11-19",
-        "test_filter":  lambda df: df[
+        "tag":           "wc_2022",
+        "train_cutoff":  "2022-11-19",
+        "test_filter":   lambda df: df[
             (df["date"] >= "2022-11-20") & (df["date"] <= "2022-12-18")
         ],
-        "label": "2022 World Cup",
+        "label":         "2022 World Cup",
         "is_tournament": True,
+        "save_artifacts": False,
     },
     {
-        "tag":          "all_2024",
-        "train_cutoff": "2024-01-01",
-        "test_filter":  lambda df: df[
-            (df["date"] >= "2024-01-01") & (df["date"] < "2025-01-01")
-        ],
-        "label": "All 2024 Internationals",
-        "is_tournament": False,
+        "tag":           "wc2026_prod",
+        "train_cutoff":  "2026-06-11",
+        "test_filter":   lambda df: df[df["date"] >= "2026-06-11"],
+        "label":         "WC 2026 Production Model (all data to kick-off)",
+        "is_tournament": True,
+        "save_artifacts": True,   # ← only this run saves the artifacts
     },
 ]
 
@@ -276,7 +277,7 @@ def _build_head_features(
 # Global HMM runner  (with dynamic Elo + draw model + confidence gating)
 # ---------------------------------------------------------------------------
 
-def _run_global_hmm(train_df, test_matches, is_tournament=False):
+def _run_global_hmm(train_df, test_matches, is_tournament=False, save_artifacts=False):
     # ── 1. Build per-team sequences ──────────────────────────────────────────
     per_team_feats = {}
     lengths        = []
@@ -341,15 +342,16 @@ def _run_global_hmm(train_df, test_matches, is_tournament=False):
     print(f"  Draw propensity model trained on {len(y_head)} matches.")
 
     # ── Save artifacts for wc2026_simulator.py ───────────────────────────────
-    import pickle as _pickle
-    _art = ARTIFACTS_DIR / "gaussian"
-    _art.mkdir(parents=True, exist_ok=True)
-    hmm.save(_art / "global_hmm.pkl")
-    with open(_art / "head.pkl", "wb") as _f:
-        _pickle.dump(head, _f)
-    with open(_art / "draw_model.pkl", "wb") as _f:
-        _pickle.dump(draw_model, _f)
-    print(f"  Artifacts saved → {_art}")
+    if save_artifacts:
+        import pickle as _pickle
+        _art = ARTIFACTS_DIR / "gaussian"
+        _art.mkdir(parents=True, exist_ok=True)
+        hmm.save(_art / "global_hmm.pkl")
+        with open(_art / "head.pkl", "wb") as _f:
+            _pickle.dump(head, _f)
+        with open(_art / "draw_model.pkl", "wb") as _f:
+            _pickle.dump(draw_model, _f)
+        print(f"  Artifacts saved → {_art}")
     # ─────────────────────────────────────────────────────────────────────────
 
     # ── 4. Elo ratings (live-updating dict) ──────────────────────────────────
@@ -443,6 +445,10 @@ def _run_global_hmm(train_df, test_matches, is_tournament=False):
         live_elo[opp]  = new_r_opp
 
     # ── 7. Draw propensity blending ──────────────────────────────────────────
+    if len(test_matches) == 0:
+        empty = np.zeros((0, 3), float)
+        return empty, empty, np.zeros(0), np.zeros(0), np.zeros(0), np.zeros(0, int)
+
     X_draw_test  = _draw_features(probs_raw, elo_diffs_test,
                                   ent_a_test, ent_b_test, is_ko_test)
     draw_probs   = draw_model.predict_proba(X_draw_test)[:, 1]
@@ -516,8 +522,16 @@ def main():
             .reset_index(drop=True)
         )
 
+        save_artifacts = run.get("save_artifacts", False)
+
         if len(test_matches) == 0:
-            print("  No test matches — skipping.")
+            if save_artifacts:
+                print(f"  Train: {len(train_df)}  |  No test matches (production run)")
+                print("  Running Global Gaussian HMM (artifact save only) …")
+                _run_global_hmm(train_df, test_matches, is_tourn, save_artifacts=True)
+                print("  Production artifacts saved. Skipping evaluation.")
+            else:
+                print("  No test matches — skipping.")
             continue
 
         print(f"  Train: {len(train_df)}  |  Test: {len(test_matches)}")
@@ -525,7 +539,7 @@ def main():
 
         print("  Running Global Gaussian HMM …")
         ghmm_raw, ghmm_blend, elo_d, ent_a, ent_b, is_ko = \
-            _run_global_hmm(train_df, test_matches, is_tourn)
+            _run_global_hmm(train_df, test_matches, is_tourn, save_artifacts=save_artifacts)
 
         print("  Running Elo …")
         elo_probs = _run_elo(train_df, test_matches)
