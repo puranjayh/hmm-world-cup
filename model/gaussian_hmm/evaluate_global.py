@@ -82,14 +82,30 @@ EVAL_RUNS = [
         "save_artifacts": False,
     },
     {
-        "tag":           "wc2026_prod",
-        "train_cutoff":  "2026-06-11",
-        "test_filter":   lambda df: df[df["date"] >= "2026-06-11"],
-        "label":         "WC 2026 Production Model (all data to kick-off)",
-        "is_tournament": True,
-        "save_artifacts": True,   # ← only this run saves the artifacts
+        "tag":          "euro_2024",
+        "train_cutoff": "2024-06-14",
+        "test_filter":  lambda df: df[
+            (df["date"] >= "2024-06-14") & (df["date"] <= "2024-07-14")
+        ],
+        "label": "UEFA Euro 2024",
     },
-]
+    {
+        "tag":          "copa_2024",
+        "train_cutoff": "2024-06-20",
+        "test_filter":  lambda df: df[
+            (df["date"] >= "2024-06-20") & (df["date"] <= "2024-07-14")
+        ],
+        "label": "Copa América 2024",
+    },
+    {
+        "tag":          "afcon_2024",
+        "train_cutoff": "2024-01-13",
+        "test_filter":  lambda df: df[
+            (df["date"] >= "2024-01-13") & (df["date"] <= "2024-02-11")
+        ],
+        "label": "AFCON 2024",
+    }
+]   
 
 TREE_FEATURES = [
     'ewa_win_rate',

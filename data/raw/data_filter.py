@@ -64,7 +64,10 @@ WC2026_TEAMS = [
     "Morocco", "Senegal", "South Africa", "Tunisia",
     "Nigeria", "Egypt", "Algeria", "Ivory Coast",
     "Japan", "South Korea", "Australia", "Saudi Arabia",
-    "Iran", "Uzbekistan", "Qatar", "Kyrgyzstan",
+    "Iran", "Uzbekistan", "Qatar", "Kyrgyzstan", "Hungary",
+    "Georgia", "Slovakia", "Slovenia", "Austria",
+    "Romania", "Burkina Faso", "Cape Verde", "Guinea", "Equatorial Guinea", 
+    "Mozambique", "Tanzania", "Angola", "Mali", "Gambia",
 ]
 # Keep any match where the team we're tracking is a WC 2026 participant.
 # Opponent can be anyone — their Elo comes from the eloratings merge (~240 teams).
