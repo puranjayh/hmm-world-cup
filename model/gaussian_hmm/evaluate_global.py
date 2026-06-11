@@ -325,6 +325,18 @@ def _run_global_hmm(train_df, test_matches, is_tournament=False):
     draw_model = _train_draw_model(X_draw, y_head)
     print(f"  Draw propensity model trained on {len(y_head)} matches.")
 
+    # ── Save artifacts for wc2026_simulator.py ───────────────────────────────
+    import pickle as _pickle
+    _art = ARTIFACTS_DIR / "gaussian"
+    _art.mkdir(parents=True, exist_ok=True)
+    hmm.save(_art / "global_hmm.pkl")
+    with open(_art / "head.pkl", "wb") as _f:
+        _pickle.dump(head, _f)
+    with open(_art / "draw_model.pkl", "wb") as _f:
+        _pickle.dump(draw_model, _f)
+    print(f"  Artifacts saved → {_art}")
+    # ─────────────────────────────────────────────────────────────────────────
+
     # ── 4. Elo ratings (live-updating dict) ──────────────────────────────────
     live_elo = (
         train_df.sort_values("date")
