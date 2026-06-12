@@ -192,6 +192,10 @@ class GlobalPredictor:
                                     _avg("Loss", "Win")),
         }
 
+    def known_teams(self) -> list[str]:
+        """Return sorted list of teams with match history."""
+        return sorted(self._per_team.keys())
+
     def predict(self,
                 team:        str,
                 opponent:    str,
@@ -215,6 +219,13 @@ class GlobalPredictor:
         Win/Draw/Loss are always returned from `team`'s perspective regardless
         of which name comes first alphabetically.
         """
+        unknown = [t for t in (team, opponent) if t not in self._per_team]
+        if unknown:
+            raise ValueError(
+                f"Unknown team(s): {unknown}. "
+                f"Call predictor.known_teams() to see valid team names."
+            )
+
         # Normalise ordering to match training convention (alphabetical).
         # If the caller passes (B, A) where B > A, swap internally and flip
         # Win/Loss in the returned dict so callers always get `team`'s view.

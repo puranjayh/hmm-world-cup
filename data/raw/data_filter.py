@@ -64,7 +64,7 @@ WC2026_TEAMS = [
     "Morocco", "Senegal", "South Africa", "Tunisia",
     "Nigeria", "Egypt", "Algeria", "Ivory Coast",
     "Japan", "South Korea", "Australia", "Saudi Arabia",
-    "Iran", "Uzbekistan", "Qatar", "Kyrgyzstan", "Hungary",
+    "Iran", "Uzbekistan", "Qatar", "Kyrgyzstan", "Bosnia and Herzegovina", "Hungary",
     "Georgia", "Slovakia", "Slovenia", "Austria",
     "Romania", "Burkina Faso", "Cape Verde", "Guinea", "Equatorial Guinea", 
     "Mozambique", "Tanzania", "Angola", "Mali", "Gambia",
