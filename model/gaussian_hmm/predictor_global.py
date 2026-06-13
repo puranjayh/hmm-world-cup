@@ -140,6 +140,14 @@ class GlobalPredictor:
         a tournament where you want form to update but not ratings.
         outcome: 2=win, 1=draw, 0=loss  (from `team`'s perspective).
         """
+        unknown = [t for t in (team, opponent) if t not in self._per_team]
+        if unknown:
+            known = self.known_teams()
+            raise ValueError(
+                f"Unknown team(s): {unknown}. "
+                f"Valid names: {known}"
+            )
+
         r_team = self.live_elo.get(team,     self._default_elo)
         r_opp  = self.live_elo.get(opponent, self._default_elo)
         opp_elo_for_team = float(opponent_elo) if opponent_elo is not None else r_opp
