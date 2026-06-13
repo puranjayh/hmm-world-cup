@@ -35,6 +35,8 @@ from model.gaussian_hmm.utils import (
 
 WINDOW = 3   # last N matches used for state inference — empirically best
 
+GLOBAL_MED_ELO = 1500.0   # median Elo threshold for "win vs strong", matches data_filter.py
+
 
 class GlobalPredictor:
 
@@ -70,46 +72,115 @@ class GlobalPredictor:
         self._per_team: dict = {}
         for team, grp in df.groupby("team", sort=False):
             self._per_team[team] = {
-                "dates":    grp["date"].to_numpy(),
-                "features": grp[FEATURE_NAMES].fillna(0).to_numpy(dtype=float),
+                "dates":       grp["date"].to_numpy(),
+                "features":    grp[FEATURE_NAMES].fillna(0).to_numpy(dtype=float),
+                "raw_gd":      grp["goal_diff"].to_numpy(dtype=float)    if "goal_diff"    in grp else np.array([], dtype=float),
+                "raw_win":     grp["win"].to_numpy(dtype=float)          if "win"          in grp else np.array([], dtype=float),
+                "raw_opp_elo": grp["opponent_elo"].to_numpy(dtype=float) if "opponent_elo" in grp else np.array([], dtype=float),
             }
 
     def update_history(self, df: pd.DataFrame) -> None:
         """Full rebuild from a new dataframe (e.g. after tournament stage ends)."""
         self._build_index(df)
 
+    def _compute_live_row(self, rec: dict) -> np.ndarray:
+        """
+        Compute the pre-match feature row for the current (just-completed) match
+        from the team's raw history, replicating data_filter.py exactly via pandas.
+
+        Called BEFORE appending the new raw values so the features are genuinely
+        pre-match (no leakage): ewa/rolling at row i use goal_diffs 0..i-1.
+        """
+        def _last(s: pd.Series, fallback: float) -> float:
+            v = s.iloc[-1] if len(s) > 0 else np.nan
+            return fallback if pd.isna(v) else float(v)
+
+        s_gd  = pd.Series(rec["raw_gd"],      dtype=float)
+        s_win = pd.Series(rec["raw_win"],      dtype=float)
+        s_opp = pd.Series(rec["raw_opp_elo"], dtype=float)
+
+        ewa_gd  = s_gd.ewm(span=5, min_periods=3).mean()
+        ewa_win = s_win.ewm(span=5, min_periods=3).mean()
+
+        new_ewa_gd  = _last(ewa_gd,  0.0)
+        new_ewa_win = _last(ewa_win, 0.5)
+
+        gd_std  = _last(s_gd.rolling(5).std(),  0.0)
+        win_std = _last(s_win.rolling(5).std(), 0.0)
+
+        s_wvs = pd.Series(np.where(s_opp >= GLOBAL_MED_ELO, s_win, np.nan), dtype=float)
+        win_vs_strong = _last(s_wvs.rolling(5, min_periods=2).mean(), new_ewa_win)
+
+        ewa_win_mom = _last(ewa_win.diff(5), 0.0)
+        ewa_gd_mom  = _last(ewa_gd.diff(5),  0.0)
+
+        return np.array([
+            new_ewa_win, new_ewa_gd, win_vs_strong,
+            gd_std, win_std, ewa_win_mom, ewa_gd_mom,
+        ], dtype=float)
+
     def append_result(self,
-                      team:     str,
-                      opponent: str,
+                      team:          str,
+                      opponent:      str,
                       date,
-                      outcome:  int,
-                      row_dict: dict | None = None) -> None:
+                      outcome:       int,
+                      goals_for:     int | None = None,
+                      goals_against: int | None = None,
+                      opponent_elo:  float | None = None,
+                      update_elo:    bool = False,
+                      row_dict:      dict | None = None) -> None:
         """
-        Incrementally add one completed result for both teams and update
-        live Elo ratings.  outcome: 2=win, 1=draw, 0=loss  (for `team`).
+        Incrementally add one completed result for both teams.
+
+        Pass goals_for / goals_against to have goal difference reflected in the
+        HMM features (ewa_goal_diff, rolling_goal_diff_std_5, momentum).
+        Without them the feature row falls back to row_dict or zeros.
+
+        update_elo=False (default) leaves live Elo unchanged — useful during
+        a tournament where you want form to update but not ratings.
+        outcome: 2=win, 1=draw, 0=loss  (from `team`'s perspective).
         """
-        for t, res, opp in [
-            (team,     outcome,     opponent),
-            (opponent, 2 - outcome, team),
-        ]:
-            rec = self._per_team.setdefault(
-                t,
-                {"dates": np.array([], dtype="datetime64"),
-                 "features": np.empty((0, len(FEATURE_NAMES)))}
-            )
+        r_team = self.live_elo.get(team,     self._default_elo)
+        r_opp  = self.live_elo.get(opponent, self._default_elo)
+        opp_elo_for_team = float(opponent_elo) if opponent_elo is not None else r_opp
+
+        empty_rec = lambda: {
+            "dates":       np.array([], dtype="datetime64"),
+            "features":    np.empty((0, len(FEATURE_NAMES))),
+            "raw_gd":      np.array([], dtype=float),
+            "raw_win":     np.array([], dtype=float),
+            "raw_opp_elo": np.array([], dtype=float),
+        }
+
+        entries = [
+            (team,     outcome,     goals_for,     goals_against, opp_elo_for_team),
+            (opponent, 2 - outcome, goals_against, goals_for,     r_team),
+        ]
+
+        for t, res, gf, ga, opp_elo_val in entries:
+            rec      = self._per_team.setdefault(t, empty_rec())
             new_date = np.array([np.datetime64(pd.Timestamp(date))], dtype="datetime64")
-            base     = row_dict or {}
-            new_feat = np.array([[float(base.get(f, 0) or 0) for f in FEATURE_NAMES]])
+
+            if gf is not None and ga is not None:
+                goal_diff = float(gf - ga)
+                win       = float(gf > ga)
+                # Compute features from history BEFORE appending — no leakage
+                new_feat = self._compute_live_row(rec).reshape(1, -1)
+                rec["raw_gd"]      = np.append(rec["raw_gd"],      goal_diff)
+                rec["raw_win"]     = np.append(rec["raw_win"],      win)
+                rec["raw_opp_elo"] = np.append(rec["raw_opp_elo"], opp_elo_val)
+            else:
+                base     = row_dict or {}
+                new_feat = np.array([[float(base.get(f, 0) or 0) for f in FEATURE_NAMES]])
+
             rec["dates"]    = np.concatenate([rec["dates"],    new_date])
             rec["features"] = np.vstack(     [rec["features"], new_feat])
 
-        # Update Elo
-        r_team = self.live_elo.get(team,     self._default_elo)
-        r_opp  = self.live_elo.get(opponent, self._default_elo)
-        score_a = _outcome_to_score(outcome)
-        new_r_team, new_r_opp = _elo_update(r_team, r_opp, score_a)
-        self.live_elo[team]     = new_r_team
-        self.live_elo[opponent] = new_r_opp
+        if update_elo:
+            score_a = _outcome_to_score(outcome)
+            new_r_team, new_r_opp = _elo_update(r_team, r_opp, score_a)
+            self.live_elo[team]     = new_r_team
+            self.live_elo[opponent] = new_r_opp
 
     # ------------------------------------------------------------------
     # Posterior
