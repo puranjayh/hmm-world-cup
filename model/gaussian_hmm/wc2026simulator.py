@@ -294,11 +294,15 @@ def _simulate_once(
     # Apply known real results to this simulation's predictor state
     if real_results:
         for rr in real_results:
-            sim_pred.append_result(
-                team=rr["team"], opponent=rr["opponent"],
-                date=rr["date"],  outcome=rr["outcome"],
-                row_dict=rr,
-            )
+            try:
+                sim_pred.append_result(
+                    team=rr["team"], opponent=rr["opponent"],
+                    date=rr["date"], outcome=rr["outcome"],
+                    goals_for=rr.get("goals_for"),
+                    goals_against=rr.get("goals_against"),
+                )
+            except Exception:
+                pass
 
     counts = {
         team: {"champion": 0, "final": 0, "semi": 0, "quarter": 0,
@@ -562,10 +566,44 @@ def print_match_prediction(pred: dict, team: str, opponent: str) -> None:
     print(f"  HMM confidence ({opponent}):  {pred['conf_opp']:.3f}")
     print(f"  HMM entropy   ({team}):     {pred['entropy_team']:.3f}")
     print(f"  HMM entropy   ({opponent}):  {pred['entropy_opp']:.3f}")
-    print(f"  Elo diff:                 {pred['elo_diff']:+.0f}")
+    print(f"  Elo diff (base):          {pred['elo_diff'] - pred.get('form_adj', 0):+.0f}")
+    print(f"  Form adjustment:          {pred.get('form_adj', 0):+.0f}")
+    print(f"  Effective Elo diff:       {pred['elo_diff']:+.0f}")
     print(f"  Max prob (confidence gate): {pred['max_prob']:.3f}")
     print(f"  Is knockout:              {'Yes' if pred['is_knockout'] else 'No'}")
     print("─" * 50)
+
+
+def print_team_form(predictor, team: str, as_of_date: str, n_rows: int = 3) -> None:
+    """Print the last n_rows HMM feature vectors for a team as of as_of_date."""
+    from model.gaussian_hmm.hmm_global import FEATURE_NAMES
+    import numpy as np
+
+    rec = predictor._per_team.get(team)
+    if rec is None or len(rec["features"]) == 0:
+        print(f"  {team}: no history found")
+        return
+
+    idx = np.searchsorted(
+        rec["dates"], np.datetime64(pd.Timestamp(as_of_date)), side="left"
+    )
+    rows  = rec["features"][max(0, idx - n_rows): idx]
+    dates = rec["dates"][max(0, idx - n_rows): idx]
+
+    print(f"\n  ── {team} form (last {len(rows)} rows as of {as_of_date}) ──")
+    header = f"  {'date':<12}" + "".join(f"  {n[:12]:>12}" for n in FEATURE_NAMES)
+    print(header)
+    for d, row in zip(dates, rows):
+        vals = "".join(f"  {v:+12.4f}" for v in row)
+        print(f"  {str(d):<12}{vals}")
+
+
+def print_form_debug(predictor, team: str, opponent: str, as_of_date: str) -> None:
+    print("\n" + "=" * 50)
+    print("  FORM DEBUG")
+    print("=" * 50)
+    print_team_form(predictor, team,     as_of_date)
+    print_team_form(predictor, opponent, as_of_date)
 
 
 # ---------------------------------------------------------------------------
@@ -574,15 +612,15 @@ def print_match_prediction(pred: dict, team: str, opponent: str) -> None:
 
 def _load_state() -> dict:
     if STATE_FILE.exists():
-        with open(STATE_FILE) as f:
+        with open(STATE_FILE, encoding="utf-8") as f:
             return json.load(f)
     return {"real_results": [], "last_probs": None}
 
 
 def _save_state(state: dict) -> None:
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=2, default=str)
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2, default=str, ensure_ascii=False)
     print(f"State saved to {STATE_FILE}")
 
 
@@ -633,10 +671,18 @@ def main() -> None:
     parser.add_argument("--tournament", type=str, default="FIFA World Cup")
     parser.add_argument("--neutral", action="store_true",
                         help="Average home/away perspectives for a neutral-ground prediction")
+    parser.add_argument("--form_debug", action="store_true",
+                        help="Print raw HMM feature rows for both teams (useful for comparing before/after a result)")
 
     # Append-result args
     parser.add_argument("--outcome", type=int, default=None,
                         help="2=team win, 1=draw, 0=team loss")
+    parser.add_argument("--goals_for",     type=int, default=None,
+                        help="Goals scored by --team")
+    parser.add_argument("--goals_against", type=int, default=None,
+                        help="Goals conceded by --team")
+    parser.add_argument("--no_simulate", action="store_true",
+                        help="Save the result to state without re-running the simulation")
 
     # Optional: load real results from CSV
     parser.add_argument("--results_csv", type=str, default=None,
@@ -678,6 +724,16 @@ def main() -> None:
     elif args.mode == "predict":
         if not args.team or not args.opponent:
             parser.error("--team and --opponent required for predict mode")
+        for rr in state.get("real_results", []):
+            try:
+                predictor.append_result(
+                    team=rr["team"], opponent=rr["opponent"],
+                    date=rr["date"], outcome=int(rr["outcome"]),
+                    goals_for=rr.get("goals_for"),
+                    goals_against=rr.get("goals_against"),
+                )
+            except Exception:
+                pass
         if args.neutral:
             pred = predictor.predict_neutral(
                 team=args.team, opponent=args.opponent,
@@ -690,33 +746,39 @@ def main() -> None:
                 as_of_date=args.date, tournament=args.tournament,
             )
         print_match_prediction(pred, args.team, args.opponent)
+        if args.form_debug:
+            print_form_debug(predictor, args.team, args.opponent, args.date)
 
     # ── append_result ─────────────────────────────────────────────────────────
     elif args.mode == "append_result":
         if not args.team or not args.opponent or args.outcome is None:
             parser.error("--team, --opponent, and --outcome required for append_result mode")
         new_result = {
-            "team":       args.team,
-            "opponent":   args.opponent,
-            "date":       args.date,
-            "outcome":    args.outcome,
-            "tournament": args.tournament,
+            "team":          args.team,
+            "opponent":      args.opponent,
+            "date":          args.date,
+            "outcome":       args.outcome,
+            "tournament":    args.tournament,
+            "goals_for":     args.goals_for,
+            "goals_against": args.goals_against,
         }
         state["real_results"].append(new_result)
         _save_state(state)
-        print(f"Recorded: {args.team} {'win' if args.outcome==2 else ('draw' if args.outcome==1 else 'loss')} vs {args.opponent} ({args.date})")
-        print("Re-running simulation with updated results …")
-        probs = run_simulation(
-            predictor,
-            n_sims=args.n_sims,
-            real_results=state["real_results"],
-            seed=args.seed,
-        )
-        state["last_probs"] = probs
-        _save_state(state)
-        _save_probs(probs, args.tag)
-        _save_probs_csv(probs, args.tag)
-        print_champion_table(probs)
+        score_str = f" ({args.goals_for}-{args.goals_against})" if args.goals_for is not None else ""
+        print(f"Recorded: {args.team} {'win' if args.outcome==2 else ('draw' if args.outcome==1 else 'loss')} vs {args.opponent}{score_str} ({args.date})")
+        if not args.no_simulate:
+            print("Re-running simulation with updated results …")
+            probs = run_simulation(
+                predictor,
+                n_sims=args.n_sims,
+                real_results=state["real_results"],
+                seed=args.seed,
+            )
+            state["last_probs"] = probs
+            _save_state(state)
+            _save_probs(probs, args.tag)
+            _save_probs_csv(probs, args.tag)
+            print_champion_table(probs)
 
     # ── show_state ────────────────────────────────────────────────────────────
     elif args.mode == "show_state":

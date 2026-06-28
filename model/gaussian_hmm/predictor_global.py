@@ -37,6 +37,13 @@ WINDOW = 3   # last N matches used for state inference — empirically best
 
 GLOBAL_MED_ELO = 1500.0   # median Elo threshold for "win vs strong", matches data_filter.py
 
+# Form-quality adjustment constants.
+# FORM_ELO_SCALE: virtual Elo points added per unit of quality-weighted EWA
+#   goal-diff differential. Bigger = more reactive to recent results.
+# FORM_ELO_CAP:  maximum absolute adjustment (prevents one blowout dominating).
+FORM_ELO_SCALE: float = 40.0
+FORM_ELO_CAP:   float = 200.0
+
 
 class GlobalPredictor:
 
@@ -83,13 +90,16 @@ class GlobalPredictor:
         """Full rebuild from a new dataframe (e.g. after tournament stage ends)."""
         self._build_index(df)
 
-    def _compute_live_row(self, rec: dict) -> np.ndarray:
+    def _compute_live_row(self, rec: dict,
+                          span: int = 5, min_periods: int = 3) -> np.ndarray:
         """
-        Compute the pre-match feature row for the current (just-completed) match
-        from the team's raw history, replicating data_filter.py exactly via pandas.
+        Compute a feature row from raw history.
 
-        Called BEFORE appending the new raw values so the features are genuinely
-        pre-match (no leakage): ewa/rolling at row i use goal_diffs 0..i-1.
+        span / min_periods control EWA behaviour:
+          - span=5, min_periods=3 (defaults): training-compatible, used for
+            the pre-match row stored on append_result.
+          - span=3, min_periods=1: fast-decay, used for the post-match row so
+            a single tournament result meaningfully shifts the form signal.
         """
         def _last(s: pd.Series, fallback: float) -> float:
             v = s.iloc[-1] if len(s) > 0 else np.nan
@@ -99,8 +109,8 @@ class GlobalPredictor:
         s_win = pd.Series(rec["raw_win"],      dtype=float)
         s_opp = pd.Series(rec["raw_opp_elo"], dtype=float)
 
-        ewa_gd  = s_gd.ewm(span=5, min_periods=3).mean()
-        ewa_win = s_win.ewm(span=5, min_periods=3).mean()
+        ewa_gd  = s_gd.ewm(span=span, min_periods=min_periods).mean()
+        ewa_win = s_win.ewm(span=span, min_periods=min_periods).mean()
 
         new_ewa_gd  = _last(ewa_gd,  0.0)
         new_ewa_win = _last(ewa_win, 0.5)
@@ -118,6 +128,30 @@ class GlobalPredictor:
             new_ewa_win, new_ewa_gd, win_vs_strong,
             gd_std, win_std, ewa_win_mom, ewa_gd_mom,
         ], dtype=float)
+
+    def _quality_weighted_form(self, team: str) -> float:
+        """
+        EWA goal-diff weighted by opponent quality.
+
+        Each match's goal diff is scaled by (opponent_elo / GLOBAL_MED_ELO),
+        so a 5-1 win vs a 1750-Elo opponent counts more than 5-1 vs a 1200-Elo
+        opponent.  Clipped to [0.5, 2.0] to avoid extreme distortions.
+        The EWA (span=5, min_periods=1) then smooths across recent history so
+        that the most recent match is weighted at ~33% and older ones decay.
+        """
+        rec = self._per_team.get(team)
+        if rec is None:
+            return 0.0
+        n = min(len(rec["raw_gd"]), len(rec["raw_opp_elo"]))
+        if n == 0:
+            return 0.0
+        quality = np.clip(
+            rec["raw_opp_elo"][:n] / GLOBAL_MED_ELO, 0.5, 2.0
+        )
+        weighted_gd = rec["raw_gd"][:n] * quality
+        s   = pd.Series(weighted_gd, dtype=float)
+        val = s.ewm(span=5, min_periods=1).mean().iloc[-1]
+        return float(val) if pd.notna(val) else 0.0
 
     def append_result(self,
                       team:          str,
@@ -177,12 +211,21 @@ class GlobalPredictor:
                 rec["raw_gd"]      = np.append(rec["raw_gd"],      goal_diff)
                 rec["raw_win"]     = np.append(rec["raw_win"],      win)
                 rec["raw_opp_elo"] = np.append(rec["raw_opp_elo"], opp_elo_val)
+                # Post-match features incorporate the result just recorded.
+                # span=5 keeps values within the training distribution so the
+                # HMM stays well-calibrated; min_periods=1 ensures teams with
+                # limited history still get a meaningful form update.
+                post_feat = self._compute_live_row(rec, span=5, min_periods=1).reshape(1, -1)
             else:
-                base     = row_dict or {}
-                new_feat = np.array([[float(base.get(f, 0) or 0) for f in FEATURE_NAMES]])
+                base      = row_dict or {}
+                new_feat  = np.array([[float(base.get(f, 0) or 0) for f in FEATURE_NAMES]])
+                post_feat = None
 
             rec["dates"]    = np.concatenate([rec["dates"],    new_date])
             rec["features"] = np.vstack(     [rec["features"], new_feat])
+            if post_feat is not None:
+                rec["dates"]    = np.concatenate([rec["dates"],    new_date])
+                rec["features"] = np.vstack(     [rec["features"], post_feat])
 
         if update_elo:
             score_a = _outcome_to_score(outcome)
@@ -265,6 +308,7 @@ class GlobalPredictor:
             "entropy_team":     ab["entropy_team"],
             "entropy_opp":      ab["entropy_opp"],
             "elo_diff":         ab["elo_diff"],
+            "form_adj":         ab.get("form_adj", 0),
             "is_knockout":      ab["is_knockout"],
             "tournament_weight": ab["tournament_weight"],
             "max_prob":         max(_avg("Win", "Loss"), _avg("Draw", "Draw"),
@@ -321,6 +365,17 @@ class GlobalPredictor:
             elo_diff = r_team - r_opp
         else:
             elo_diff = float(elo_diff)
+
+        # Quality-weighted form adjustment.
+        # Reads each team's quality-weighted EWA goal diff (opponent_elo-scaled)
+        # and converts the differential into virtual Elo points added to elo_diff.
+        # live_elo is NOT modified — this only adjusts the feature passed to the head.
+        form_a   = self._quality_weighted_form(team)
+        form_b   = self._quality_weighted_form(opponent)
+        form_adj = float(np.clip(
+            (form_a - form_b) * FORM_ELO_SCALE, -FORM_ELO_CAP, FORM_ELO_CAP
+        ))
+        elo_diff += form_adj
 
         is_ko  = _is_knockout(tournament)
         tourn_w = _tournament_weight_val(tournament)
@@ -385,6 +440,7 @@ class GlobalPredictor:
             "entropy_opp":     float(pf_opp[N + 1]),
             # Match context
             "elo_diff":        float(elo_diff),
+            "form_adj":        float(form_adj) * (-1 if swapped else 1),
             "is_knockout":     int(is_ko),
             "tournament_weight": float(tourn_w),
             # Confidence gating helper
