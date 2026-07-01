@@ -71,13 +71,13 @@ S No,Team,Opponent,Predicted Win,Predicted Draw,Predicted Loss,Result,Accurate,A
 70,DR Congo,Uzbekistan,26.5,35.8,37.7,DR Congo,0,0
 71,Algeria,Austria,24.1,41.4,34.6,Draw,1,
 72,Jordan,Argentina,2.1,21.8,76.1,Argentina,1,1
-73,South Africa,Canada,9.7,33.3,56.9,,,
-74,Brazil,Japan,41.8,39.2,19,,,
-75,Germany,Paraguay,40,39.8,20.2,,,
-76,Netherlands,Morocco,41.3,40.1,18.6,,,
-77,Ivory Coast,Norway,12.5,32.9,54.6,,,
-78,France,Sweden,74.7,21.9,3.4,,,
-79,Mexico,Ecuador,29.9,38.5,31.7,,,
+73,South Africa,Canada,9.7,33.3,56.9,Canada,1,1
+74,Brazil,Japan,41.8,39.2,19,Brazil,1,1
+75,Germany,Paraguay,40,39.8,20.2,Paraguay,0,0
+76,Netherlands,Morocco,41.3,40.1,18.6,Morocco,0,0
+77,Ivory Coast,Norway,12.5,32.9,54.6,Norway,1,1
+78,France,Sweden,74.7,21.9,3.4,France,1,1
+79,Mexico,Ecuador,29.9,38.5,31.7,Mexico,0,0
 80,England,DR Congo,71,24.4,4.6,,,
 81,Belgium,Senegal,37.4,41,21.6,,,
 82,USA,Bosnia,44.7,38.6,16.8,,,
