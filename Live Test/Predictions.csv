@@ -95,11 +95,11 @@ S No,Team,Opponent,Predicted Win,Predicted Draw,Predicted Loss,Result,Accurate,A
 94,USA,Belgium,18.8,40.4,40.8,Belgium ,1,1
 95,Argentina,Egypt,79,18.3,2.7,Argentina,1,1
 96,Switzerland,Colombia,23.2,42.6,34.2,Switzerland,1,0
-97,France,Morocco,55.9,32.2,11.9,,,
-98,Spain,Belgium,55.4,34.4,10.2,,,
-99,Norway,England,17.6,40.3,42,,,
-100,Argentina,Switzerland,55.3,33,11.7,,,
-101,,,,,,,,
-102,,,,,,,,
+97,France,Morocco,55.9,32.2,11.9,France,1,1
+98,Spain,Belgium,55.4,34.4,10.2,Spain,1,1
+99,Norway,England,17.6,40.3,42,England,1,1
+100,Argentina,Switzerland,55.3,33,11.7,Argentina,1,1
+101,France,Spain,22.3,42,35.7,,,
+102,Argentina,England,40.8,39.7,19.5,,,
 103,,,,,,,,
 104,,,,,,,,
