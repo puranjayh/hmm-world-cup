@@ -99,7 +99,7 @@ S No,Team,Opponent,Predicted Win,Predicted Draw,Predicted Loss,Result,Accurate,A
 98,Spain,Belgium,55.4,34.4,10.2,Spain,1,1
 99,Norway,England,17.6,40.3,42,England,1,1
 100,Argentina,Switzerland,55.3,33,11.7,Argentina,1,1
-101,France,Spain,22.3,42,35.7,,,
-102,Argentina,England,40.8,39.7,19.5,,,
-103,,,,,,,,
-104,,,,,,,,
+101,France,Spain,22.3,42,35.7,Spain,0,1
+102,Argentina,England,40.8,39.7,19.5,Argentina,1,1
+103,France,England,31,42.9,26.1,,,
+104,Argentina,Spain,23.3,42.3,34.5,,,
