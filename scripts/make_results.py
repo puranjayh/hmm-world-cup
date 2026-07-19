@@ -88,17 +88,26 @@ def main() -> None:
                 "commit":     commit,
             })
 
+    state_rows = []
+    for run in metrics.values():
+        for sm in run.get("state_means", []):
+            state_rows.append({"tournament": run["label"], **sm,
+                               "window": WINDOW, "commit": commit})
+
     main_df = pd.DataFrame(main_rows)
     gate_df = pd.DataFrame(gate_rows)
 
     main_path = RESULTS_DIR / "main_results.csv"
     gate_path = RESULTS_DIR / "confidence_gating.csv"
+    state_path = RESULTS_DIR / "state_means.csv"
     main_df.to_csv(main_path, index=False)
     gate_df.to_csv(gate_path, index=False)
+    pd.DataFrame(state_rows).to_csv(state_path, index=False)
 
     print(f"commit {commit}, WINDOW={WINDOW}")
     print(f"  wrote {main_path.relative_to(PROJECT_ROOT)}  ({len(main_df)} rows)")
     print(f"  wrote {gate_path.relative_to(PROJECT_ROOT)}  ({len(gate_df)} rows)")
+    print(f"  wrote {state_path.relative_to(PROJECT_ROOT)}  ({len(state_rows)} rows)")
 
 
 if __name__ == "__main__":

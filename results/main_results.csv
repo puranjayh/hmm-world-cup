@@ -1,49 +1,49 @@
 tournament,subset,model,n,log_loss,brier,accuracy,rps,window,commit
-2018 World Cup,All Matches,GlobalGHMM,54,0.9409,0.5555,0.5741,0.2011,3,3c32f61
-2018 World Cup,All Matches,GlobalGHMM+Draw,54,0.9401,0.5549,0.5741,0.201,3,3c32f61
-2018 World Cup,All Matches,XGBoost,54,1.0496,0.6215,0.537,0.2363,3,3c32f61
-2018 World Cup,All Matches,Random Forest,54,1.0797,0.6359,0.5,0.2362,3,3c32f61
-2018 World Cup,All Matches,Elo,54,0.948,0.5561,0.5926,0.2014,3,3c32f61
-2018 World Cup,All Matches,Uniform,54,1.0986,0.6667,0.3704,0.2469,3,3c32f61
-2018 World Cup,W/L Only,GlobalGHMM,44,0.8269,0.4708,0.7045,0.2073,3,3c32f61
-2018 World Cup,W/L Only,GlobalGHMM+Draw,44,0.8266,0.4704,0.7045,0.2072,3,3c32f61
-2018 World Cup,W/L Only,XGBoost,44,0.9729,0.5699,0.6136,0.256,3,3c32f61
-2018 World Cup,W/L Only,Random Forest,44,0.9954,0.582,0.5909,0.2553,3,3c32f61
-2018 World Cup,W/L Only,Elo,44,0.8575,0.4854,0.7273,0.2107,3,3c32f61
-2018 World Cup,W/L Only,Uniform,44,1.0986,0.6667,0.4545,0.2778,3,3c32f61
-2022 World Cup,All Matches,GlobalGHMM,56,1.0849,0.632,0.5,0.2239,3,3c32f61
-2022 World Cup,All Matches,GlobalGHMM+Draw,56,1.0837,0.6308,0.5,0.2235,3,3c32f61
-2022 World Cup,All Matches,XGBoost,56,1.0451,0.6324,0.4821,0.2217,3,3c32f61
-2022 World Cup,All Matches,Random Forest,56,1.0925,0.6579,0.4821,0.2401,3,3c32f61
-2022 World Cup,All Matches,Elo,56,1.067,0.6153,0.5179,0.2193,3,3c32f61
-2022 World Cup,All Matches,Uniform,56,1.0986,0.6667,0.2679,0.2361,3,3c32f61
-2022 World Cup,W/L Only,GlobalGHMM,42,0.9701,0.5404,0.6667,0.2435,3,3c32f61
-2022 World Cup,W/L Only,GlobalGHMM+Draw,42,0.9697,0.5394,0.6667,0.2431,3,3c32f61
-2022 World Cup,W/L Only,XGBoost,42,0.8986,0.5297,0.6429,0.238,3,3c32f61
-2022 World Cup,W/L Only,Random Forest,42,0.9774,0.5769,0.5952,0.2636,3,3c32f61
-2022 World Cup,W/L Only,Elo,42,0.9761,0.5332,0.6905,0.2396,3,3c32f61
-2022 World Cup,W/L Only,Uniform,42,1.0986,0.6667,0.3571,0.2778,3,3c32f61
-UEFA Euro 2024,All Matches,GlobalGHMM,65,0.9042,0.5318,0.5692,0.1658,3,3c32f61
-UEFA Euro 2024,All Matches,GlobalGHMM+Draw,65,0.9046,0.5319,0.5692,0.1657,3,3c32f61
-UEFA Euro 2024,All Matches,XGBoost,65,1.0926,0.6606,0.4615,0.2248,3,3c32f61
-UEFA Euro 2024,All Matches,Random Forest,65,1.1505,0.6953,0.3846,0.2422,3,3c32f61
-UEFA Euro 2024,All Matches,Elo,65,0.8977,0.5306,0.5385,0.1639,3,3c32f61
-UEFA Euro 2024,All Matches,Uniform,65,1.0986,0.6667,0.2308,0.2291,3,3c32f61
-UEFA Euro 2024,W/L Only,GlobalGHMM,46,0.689,0.3709,0.8043,0.162,3,3c32f61
-UEFA Euro 2024,W/L Only,GlobalGHMM+Draw,46,0.6905,0.3712,0.8043,0.162,3,3c32f61
-UEFA Euro 2024,W/L Only,XGBoost,46,0.9445,0.5553,0.6522,0.2487,3,3c32f61
-UEFA Euro 2024,W/L Only,Random Forest,46,1.0026,0.5979,0.5217,0.2687,3,3c32f61
-UEFA Euro 2024,W/L Only,Elo,46,0.6929,0.3727,0.7609,0.1591,3,3c32f61
-UEFA Euro 2024,W/L Only,Uniform,46,1.0986,0.6667,0.3261,0.2778,3,3c32f61
-Copa América 2024,All Matches,GlobalGHMM,52,0.944,0.5677,0.5385,0.1663,3,3c32f61
-Copa América 2024,All Matches,GlobalGHMM+Draw,52,0.9432,0.5675,0.5385,0.1663,3,3c32f61
-Copa América 2024,All Matches,XGBoost,52,1.0989,0.6664,0.4423,0.2135,3,3c32f61
-Copa América 2024,All Matches,Random Forest,52,1.1387,0.6904,0.4423,0.2282,3,3c32f61
-Copa América 2024,All Matches,Elo,52,0.9282,0.5597,0.4808,0.1639,3,3c32f61
-Copa América 2024,All Matches,Uniform,52,1.0986,0.6667,0.1923,0.2201,3,3c32f61
-Copa América 2024,W/L Only,GlobalGHMM,34,0.6601,0.3586,0.8235,0.1558,3,3c32f61
-Copa América 2024,W/L Only,GlobalGHMM+Draw,34,0.6628,0.36,0.8235,0.1561,3,3c32f61
-Copa América 2024,W/L Only,XGBoost,34,0.9086,0.532,0.6765,0.2373,3,3c32f61
-Copa América 2024,W/L Only,Random Forest,34,0.9513,0.5642,0.5882,0.2562,3,3c32f61
-Copa América 2024,W/L Only,Elo,34,0.6765,0.3676,0.7353,0.1563,3,3c32f61
-Copa América 2024,W/L Only,Uniform,34,1.0986,0.6667,0.2941,0.2778,3,3c32f61
+2018 World Cup,All Matches,GlobalGHMM,54,0.9409,0.5555,0.5741,0.2011,3,90ca73d
+2018 World Cup,All Matches,GlobalGHMM+Draw,54,0.9401,0.5549,0.5741,0.201,3,90ca73d
+2018 World Cup,All Matches,XGBoost,54,1.0496,0.6215,0.537,0.2363,3,90ca73d
+2018 World Cup,All Matches,Random Forest,54,1.0797,0.6359,0.5,0.2362,3,90ca73d
+2018 World Cup,All Matches,Elo,54,0.948,0.5561,0.5926,0.2014,3,90ca73d
+2018 World Cup,All Matches,Uniform,54,1.0986,0.6667,0.3704,0.2469,3,90ca73d
+2018 World Cup,W/L Only,GlobalGHMM,44,0.8269,0.4708,0.7045,0.2073,3,90ca73d
+2018 World Cup,W/L Only,GlobalGHMM+Draw,44,0.8266,0.4704,0.7045,0.2072,3,90ca73d
+2018 World Cup,W/L Only,XGBoost,44,0.9729,0.5699,0.6136,0.256,3,90ca73d
+2018 World Cup,W/L Only,Random Forest,44,0.9954,0.582,0.5909,0.2553,3,90ca73d
+2018 World Cup,W/L Only,Elo,44,0.8575,0.4854,0.7273,0.2107,3,90ca73d
+2018 World Cup,W/L Only,Uniform,44,1.0986,0.6667,0.4545,0.2778,3,90ca73d
+2022 World Cup,All Matches,GlobalGHMM,56,1.0849,0.632,0.5,0.2239,3,90ca73d
+2022 World Cup,All Matches,GlobalGHMM+Draw,56,1.0837,0.6308,0.5,0.2235,3,90ca73d
+2022 World Cup,All Matches,XGBoost,56,1.0451,0.6324,0.4821,0.2217,3,90ca73d
+2022 World Cup,All Matches,Random Forest,56,1.0925,0.6579,0.4821,0.2401,3,90ca73d
+2022 World Cup,All Matches,Elo,56,1.067,0.6153,0.5179,0.2193,3,90ca73d
+2022 World Cup,All Matches,Uniform,56,1.0986,0.6667,0.2679,0.2361,3,90ca73d
+2022 World Cup,W/L Only,GlobalGHMM,42,0.9701,0.5404,0.6667,0.2435,3,90ca73d
+2022 World Cup,W/L Only,GlobalGHMM+Draw,42,0.9697,0.5394,0.6667,0.2431,3,90ca73d
+2022 World Cup,W/L Only,XGBoost,42,0.8986,0.5297,0.6429,0.238,3,90ca73d
+2022 World Cup,W/L Only,Random Forest,42,0.9774,0.5769,0.5952,0.2636,3,90ca73d
+2022 World Cup,W/L Only,Elo,42,0.9761,0.5332,0.6905,0.2396,3,90ca73d
+2022 World Cup,W/L Only,Uniform,42,1.0986,0.6667,0.3571,0.2778,3,90ca73d
+UEFA Euro 2024,All Matches,GlobalGHMM,65,0.9042,0.5318,0.5692,0.1658,3,90ca73d
+UEFA Euro 2024,All Matches,GlobalGHMM+Draw,65,0.9046,0.5319,0.5692,0.1657,3,90ca73d
+UEFA Euro 2024,All Matches,XGBoost,65,1.0926,0.6606,0.4615,0.2248,3,90ca73d
+UEFA Euro 2024,All Matches,Random Forest,65,1.1505,0.6953,0.3846,0.2422,3,90ca73d
+UEFA Euro 2024,All Matches,Elo,65,0.8977,0.5306,0.5385,0.1639,3,90ca73d
+UEFA Euro 2024,All Matches,Uniform,65,1.0986,0.6667,0.2308,0.2291,3,90ca73d
+UEFA Euro 2024,W/L Only,GlobalGHMM,46,0.689,0.3709,0.8043,0.162,3,90ca73d
+UEFA Euro 2024,W/L Only,GlobalGHMM+Draw,46,0.6905,0.3712,0.8043,0.162,3,90ca73d
+UEFA Euro 2024,W/L Only,XGBoost,46,0.9445,0.5553,0.6522,0.2487,3,90ca73d
+UEFA Euro 2024,W/L Only,Random Forest,46,1.0026,0.5979,0.5217,0.2687,3,90ca73d
+UEFA Euro 2024,W/L Only,Elo,46,0.6929,0.3727,0.7609,0.1591,3,90ca73d
+UEFA Euro 2024,W/L Only,Uniform,46,1.0986,0.6667,0.3261,0.2778,3,90ca73d
+Copa América 2024,All Matches,GlobalGHMM,52,0.944,0.5677,0.5385,0.1663,3,90ca73d
+Copa América 2024,All Matches,GlobalGHMM+Draw,52,0.9432,0.5675,0.5385,0.1663,3,90ca73d
+Copa América 2024,All Matches,XGBoost,52,1.0989,0.6664,0.4423,0.2135,3,90ca73d
+Copa América 2024,All Matches,Random Forest,52,1.1387,0.6904,0.4423,0.2282,3,90ca73d
+Copa América 2024,All Matches,Elo,52,0.9282,0.5597,0.4808,0.1639,3,90ca73d
+Copa América 2024,All Matches,Uniform,52,1.0986,0.6667,0.1923,0.2201,3,90ca73d
+Copa América 2024,W/L Only,GlobalGHMM,34,0.6601,0.3586,0.8235,0.1558,3,90ca73d
+Copa América 2024,W/L Only,GlobalGHMM+Draw,34,0.6628,0.36,0.8235,0.1561,3,90ca73d
+Copa América 2024,W/L Only,XGBoost,34,0.9086,0.532,0.6765,0.2373,3,90ca73d
+Copa América 2024,W/L Only,Random Forest,34,0.9513,0.5642,0.5882,0.2562,3,90ca73d
+Copa América 2024,W/L Only,Elo,34,0.6765,0.3676,0.7353,0.1563,3,90ca73d
+Copa América 2024,W/L Only,Uniform,34,1.0986,0.6667,0.2941,0.2778,3,90ca73d

@@ -1,158 +1,164 @@
-# HMM World Cup 2026 Prediction System
+# Forecasting International Football with a Global Gaussian HMM
 
-A research-oriented football prediction framework using Hidden Markov Models to forecast match outcomes and tournament progression for the 2026 FIFA World Cup.
-
----
-
-## Overview
-
-Traditional football prediction systems rely on static rankings or short-term form windows. This project treats each team as a dynamic system transitioning between latent performance states - learned entirely from historical match data - and updates predictions after every observed result.
-
-The framework combines:
-- **Hidden Markov Models (HMMs)** for latent state inference
-- **Bayesian updating** for dynamic in-tournament recalibration
-- **Elo ratings** as a structural prior
-- **Rolling form metrics** for short-term momentum signals
-- **Expected Goals (xG)** for shot-quality-adjusted performance measurement
+A latent-state model for international football match outcomes, benchmarked against
+Elo, Random Forest and XGBoost, and validated by a prospectively committed forecast
+log of the 2026 FIFA World Cup.
 
 ---
 
-## Research Premise
+## Result in one line
 
-The HMM assumes teams occupy one of several unobservable performance states (e.g. Dominant, Stable, Declining, Unstable) at any point in time. Match results are observable emissions from these hidden states. After each match:
+The model is **statistically indistinguishable from Elo** and **significantly better
+than Random Forest and XGBoost**, while exposing an interpretable latent form state
+per team.
 
-1. The observed result (Win / Draw / Loss) updates the posterior probability over hidden states via Bayes' rule.
-2. Transition matrices encode how likely a team is to shift states between matches.
-3. Emission matrices encode how likely each state is to produce a given result.
+Held-out tournaments: 2018 WC, 2022 WC, UEFA Euro 2024, Copa América 2024.
+Paired bootstrap, 20,000 resamples, on per-match log-loss.
 
-This allows the system to adapt mid-tournament - a team that wins its first two group stage matches has its state distribution updated before the third prediction is made.
+**All matches (n = 227)** — accuracy: GHMM 54.6%, Elo 53.3%, XGBoost 48.0%, RF 44.9%
 
----
+| vs | Δ log-loss | 95% CI | p | |
+|---|---|---|---|---|
+| Elo | +0.008 | [−0.007, +0.023] | 0.31 | not significant |
+| XGBoost | −0.106 | [−0.171, −0.040] | 0.001 | **significant** |
+| Random Forest | −0.151 | [−0.226, −0.073] | <0.001 | **significant** |
 
-## Methodology
+**Decisive matches only (n = 166)** — accuracy: GHMM 74.7%, Elo 72.9%, XGBoost 64.5%, RF 57.2%
 
-### 1. Data Collection
+| vs | Δ log-loss | 95% CI | p | |
+|---|---|---|---|---|
+| Elo | −0.013 | [−0.030, +0.003] | 0.11 | not significant |
+| XGBoost | −0.142 | [−0.224, −0.057] | 0.001 | **significant** |
+| Random Forest | −0.192 | [−0.284, −0.099] | <0.001 | **significant** |
 
-International football match data from 2008 onwards, covering all major national teams across tournament and friendly fixtures.
-
-Sources:
-- Kaggle International Football Results
-- Elo Ratings Dataset
-- StatsBomb Open Data (for xG)
-
-### 2. Feature Engineering
-
-Per-match features engineered for the prediction pipeline:
-
-| Feature | Description |
-|---|---|
-| `goals_for` / `goals_against` | Raw scoreline |
-| `goal_diff` | Signed goal difference |
-| `result` | Win / Draw / Loss |
-| `team_elo` / `opponent_elo` | Elo ratings at match date |
-| `elo_diff` | Signed Elo differential |
-| `rolling_win_rate_5` | Win rate over last 5 matches |
-| `rolling_goal_diff_5` | Average goal difference over last 5 matches |
-| `tournament_weight` | Match importance proxy (5.0 = WC, 1.0 = Friendly) |
-| `neutral` | Neutral venue flag |
-| `xg_for` / `xg_against` | Expected goals (where available) |
-
-### 3. Hidden Markov Model
-
-Each team's match history is modelled as an observation sequence. The HMM learns:
-- **Transition matrix** - probability of moving between hidden states
-- **Emission matrix** - probability of each result given each hidden state
-- **Initial state distribution** - starting state probabilities
-
-Hidden states (example):
-- `Dominant` - consistently winning, strong form
-- `Stable` - competitive, balanced results
-- `Declining` - deteriorating form, inconsistent results
-- `Unstable` - volatile, unpredictable outcomes
-
-The forward algorithm is used at inference time to compute the current state distribution from a team's match history up to (but not including) the prediction date - enforcing strict no-leakage guarantees.
-
-### 4. Bayesian Updating
-
-After each observed match result, the model recalculates the posterior probability distribution over hidden states. This makes the system dynamic:
-- Pre-tournament predictions are based on historical form only
-- Group stage predictions update as results come in
-- Knockout predictions incorporate all prior tournament results
-
-### 5. Benchmarking
-
-The model is evaluated against Random Forest and XGBoost baselines across three held-out evaluation sets:
-
-| Evaluation Set | Train Period | Purpose |
-|---|---|---|
-| 2018 FIFA World Cup | 2008–2017 | Tournament holdout 1 |
-| 2022 FIFA World Cup | 2008–2021 | Tournament holdout 2 |
-| All 2024 internationals | 2008–2023 | Statistical robustness (N ≈ 600–800) |
-
-Metrics reported for all models:
-- **Log-loss** - primary metric; rewards calibrated probability outputs
-- **Brier score** - mean squared error of predicted probabilities
-- **Accuracy** - proportion of correct winner predictions
-- **RPS (Ranked Probability Score)** - standard football forecasting metric; accounts for ordinal nature of W/D/L
-
-Both static (pre-tournament) and dynamic (updated after each match) evaluation modes are run and compared.
+Negative Δ means the HMM is better. We do **not** claim the model beats Elo — the
+confidence interval does not support it.
 
 ---
 
-## Dataset Structure
+## Method
 
-```
-data/
-│
-├── raw/
-│   ├── all_matches.csv          # Full international match history
-│   ├── eloratings.csv           # Historical Elo ratings per team
-│   ├── match_ids.csv            # StatsBomb match identifiers
-│   ├── matches/                 # StatsBomb match-level JSON
-│   └── events/                  # StatsBomb event-level JSON (for xG)
-│
-└── processed/
-    ├── filtered_matches.csv     # Cleaned match data with rolling features + Elo
-    ├── xg_dataset.csv           # xG metrics merged from StatsBomb
-    └── final_dataset.csv        # Full feature matrix used for training
-```
+Every team's match history is one sequence from a **single global Gaussian HMM**
+with 7 latent states, fitted across all teams rather than per team. States are
+learned from eight standardised form features:
 
----
+`ewa_win_rate`, `ewa_goal_diff`, `rolling_win_vs_strong_5`, `rolling_goal_diff_std_5`,
+`rolling_win_rate_std_5`, `ewa_win_rate_momentum`, `ewa_goal_diff_momentum`
 
-## Project Structure
+At prediction time the forward algorithm gives each team a posterior over states
+using only matches strictly before the fixture date. For a match, the two posteriors
+are combined into a 58-dimensional vector — the 7×7 outer product of the two state
+distributions, each side's max-probability and entropy, the Elo differential and its
+interactions, plus knockout and tournament-weight flags — and passed to a multinomial
+logistic head. A secondary draw-propensity classifier is blended into the output.
 
-```
-model/
-├── hmm_team.py          # Per-team HMM: training, forward algorithm, state inference
-├── predictor.py         # Match outcome predictor with strict date-gating
-├── evaluate.py          # Benchmarking pipeline (HMM, RF, XGBoost) across all eval sets
-├── config.py            # Training cutoffs, state counts, feature lists
-└── tests/
-    └── test_sanity.py   # Property-based sanity checks (no CSV required)
-
-data/
-├── raw/
-└── processed/
-```
+**Latent states carry signal beyond Elo.** Ablating the feature blocks: full model
+0.999 log-loss, Elo features only 1.012, posterior features only 1.048. The state
+block is worth roughly 0.013 nats on top of the rating.
 
 ---
 
-## Running the Benchmarks
+## Reproducing the results
 
 ```bash
-python -m model.evaluate
+pip install -r requirements.txt
+
+# 1. Build the feature table from raw match + Elo data
+cd data/raw && python data_filter.py && cd ../..
+
+# 2. Run all four held-out evaluations (writes the metrics JSON)
+python -m model.gaussian_hmm.evaluate_global
+
+# 3. Regenerate results/*.csv from that JSON
+python scripts/make_results.py
 ```
 
-This runs all three evaluation sets (2018 WC, 2022 WC, 2024 all matches) for HMM, RF, and XGBoost, and outputs:
-- `metrics_all.json` - full results table across all models and splits
-- Calibration plots per evaluation run
+Runs are **bit-identical between invocations**. BLAS threads are pinned to 1 before
+numpy is imported, because multithreaded reductions perturbed the logistic head
+enough to flip predictions near decision boundaries and move reported accuracy by a
+full match. Set `REPRODUCIBLE=0` for the faster, non-deterministic path.
+
+Every row of `results/*.csv` is stamped with the window and the commit that produced
+it. The tables are generated, never transcribed.
 
 ---
 
-## Key Design Decisions
+## Layout
 
-**No feature engineering for the HMM.** The HMM learns form states directly from raw Win/Draw/Loss sequences. RF and XGBoost use hand-crafted rolling features (`elo_diff`, `rolling_win_rate_5`, `rolling_goal_diff_5`, `tournament_weight`). If they perform comparably, this demonstrates the HMM extracts equivalent signal without manual feature design.
+```
+model/gaussian_hmm/
+├── hmm_global.py         # global Gaussian HMM: fit, forward algorithm, posteriors
+├── evaluate_global.py    # benchmark vs Elo / RF / XGBoost — entry point
+├── predictor_global.py   # live prediction head (see caveat below)
+├── wc2026simulator.py    # tournament bracket simulation
+├── utils.py              # Elo update, draw blending, tournament weights
+└── config.py             # state count, seed, paths
 
-**Strict temporal separation.** All models are retrained from scratch per evaluation cutoff. The predictor's date-gating ensures no match result is used before its date - both during training and at inference time.
+data/raw/
+├── data_filter.py        # builds filtered_matches.csv from raw sources
+├── update_elo.py         # appends current Elo snapshots from eloratings.net
+├── all_matches.csv       # international results, 1872–2026
+└── eloratings.csv        # historical Elo ratings
 
-**Dynamic updating is the default.** Predictions for later matches in a tournament use earlier match results as observations. This mirrors real deployment conditions and is consistent with best practice in football forecasting literature.
+scripts/make_results.py   # regenerates every results CSV from the metrics JSON
+Live Test/Predictions.csv # prospective 2026 World Cup forecast log
+results/                  # generated benchmark tables
+```
+
+---
+
+## The 2026 World Cup forecast log
+
+`Live Test/Predictions.csv` holds 104 predictions made during the 2026 World Cup and
+committed **before** each round was played — R32 on 28 June, R16 on 4 July, quarters
+on 8 July, semis on 13 July, final on 16 July. The git history is the timestamp.
+
+| | correct | n | accuracy | 95% CI |
+|---|---|---|---|---|
+| Three-way (W/D/L) | 62 | 102 | 60.8% | [51.3%, 70.3%] |
+| Decisive matches | 67 | 82 | 81.7% | [73.3%, 90.1%] |
+
+Two things must be stated plainly:
+
+1. **These predictions have never been recomputed and never will be.** Their only
+   value is that they preceded the matches. Re-running them with an improved model
+   would turn a prospective test into a backtest.
+2. **They were produced by a model carrying a known defect** — see the caveat below.
+   The figures above are what the deployed system actually achieved, not what a
+   corrected model would achieve.
+
+There is no baseline on these same 104 fixtures yet, so the accuracies are not
+directly comparable to the benchmark table above.
+
+---
+
+## Known limitations
+
+**`predictor_global.py` retains a train/test Elo mismatch.** It feeds the head a
+simulated dynamically-updated Elo plus a form adjustment, while the head is trained
+on the published Elo column. This costs about 0.04 nats and is fixed in
+`evaluate_global.py`. It is deliberately left in place here because this is the code
+path that generated the 2026 predictions; changing it would break the correspondence
+between the repository and that record. **Fix it before any new live forecasting.**
+
+**The evaluation is small.** 227 matches across four tournaments. Differences below
+roughly 0.02 nats are not resolvable at this sample size.
+
+**The lookback window is not tuned.** Sweeping N over [1, 20] moves mean log-loss by
+less than 0.005 nats. `WINDOW = 3` is retained because it is the value the live 2026
+predictions used, not because it is optimal.
+
+**Dataset cutoff is 2008-01-01.** Earlier iterations used a 2002 cutoff; that variant
+is a one-line change in `data_filter.py` and produces a larger training set.
+
+---
+
+## Data sources
+
+- International match results — Kaggle international football results
+- Elo ratings — [eloratings.net](https://www.eloratings.net)
+- StatsBomb open data — match identifiers (xG features are not used in the current model)
+
+Elo ratings are merged with `allow_exact_matches=False`. eloratings.net dates a
+rating to the day whose matches it already reflects, so an exact-date merge would
+pull post-match ratings into the features of the match being predicted.
