@@ -136,10 +136,13 @@ elo_df['team'] = elo_df['team'].replace({
 team_df = team_df.sort_values('date')
 elo_df  = elo_df.sort_values('date')
 
+# allow_exact_matches=False is required: eloratings.net publishes a rating dated D
+# that already reflects matches played on D. Allowing an exact-date match therefore
+# pulls the POST-match rating into the feature for the match being predicted.
 team_df = pd.merge_asof(
     team_df,
     elo_df[['date', 'team', 'rating']],
-    on='date', by='team', direction='backward'
+    on='date', by='team', direction='backward', allow_exact_matches=False
 )
 team_df = team_df.rename(columns={'rating': 'team_elo'})
 
@@ -147,7 +150,7 @@ elo_opp = elo_df.rename(columns={'team': 'opponent', 'rating': 'opponent_elo'})
 team_df = pd.merge_asof(
     team_df.sort_values('date'),
     elo_opp[['date', 'opponent', 'opponent_elo']],
-    on='date', by='opponent', direction='backward'
+    on='date', by='opponent', direction='backward', allow_exact_matches=False
 )
 team_df['elo_diff'] = team_df['team_elo'] - team_df['opponent_elo']
 team_df = team_df.dropna(subset=['team_elo', 'opponent_elo'])

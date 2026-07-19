@@ -2,14 +2,28 @@
 evaluate_global.py — Benchmark the global Gaussian HMM against baselines.
 
 Improvements over v1:
-  1. Dynamic Elo updating  — after each test match, both teams' Elo ratings
-     are updated using the standard K-factor formula before the next prediction.
+  1. Elo differential — the published rating diff (merge_asof, strictly prior to
+     the match) is used identically at train and test time. A simulated live_elo
+     is still maintained for callers that need it, but is NOT fed to the head:
+     doing so trained the model on one Elo distribution and scored it on another.
   2. Tournament stage feature — is_knockout + tournament_weight passed to head.
   3. Draw propensity model — a secondary binary classifier (draw vs no-draw)
      trained on entropy/elo-closeness features; blended into final probs.
   4. Confidence gating — reported alongside accuracy at multiple thresholds.
 """
 from __future__ import annotations
+
+import os
+
+# Pin BLAS threads BEFORE numpy/sklearn are imported. Multithreaded reductions
+# sum in nondeterministic order, which perturbs the logistic head's coefficients
+# in the last few decimals — enough to flip an argmax near a decision boundary
+# and move reported accuracy by a full match between runs on identical input.
+# Set REPRODUCIBLE=0 to allow multithreading (faster, but results will drift).
+if os.environ.get("REPRODUCIBLE", "1") == "1":
+    for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+               "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+        os.environ.setdefault(_v, "1")
 
 import json
 import warnings
@@ -192,7 +206,7 @@ def _build_feature_vec(
     p_B     = pf_opp[:N];   max_p_B = pf_opp[N];   ent_B = pf_opp[N + 1]
     outer   = np.outer(p_A, p_B).ravel()
 
-    return np.concatenate([
+    fv = np.concatenate([
         outer,
         [max_p_A, max_p_B],
         [ent_A,   ent_B],
@@ -202,6 +216,7 @@ def _build_feature_vec(
         [float(is_ko)],          # NEW
         [float(tourn_w)],        # NEW
     ])
+    return fv
 
 # ---------------------------------------------------------------------------
 # Build logistic head training data
@@ -419,13 +434,18 @@ def _run_global_hmm(train_df, test_matches, is_tournament=False, save_artifacts=
         pt = posterior_for(team, row["date"])
         po = posterior_for(opp,  row["date"])
 
-        fv  = _build_feature_vec(hmm, pt, po, dyn_elo_diff, is_ko, tw)
+        # Use the published Elo differential, matching how the head was TRAINED.
+        # merge_asof already folds in ratings published during the tournament, so
+        # this retains in-tournament information without the train/test mismatch
+        # that the simulated live_elo drift introduced.
+        feat_elo_diff = float(row.get("elo_diff") or dyn_elo_diff)
+        fv  = _build_feature_vec(hmm, pt, po, feat_elo_diff, is_ko, tw)
         fv  = np.nan_to_num(fv, nan=0.0, posinf=0.0, neginf=0.0)
         raw = head.predict_proba(fv.reshape(1, -1))
         aligned = _align_classes(raw, head.classes_, n=1)[0]
         probs_raw[i] = aligned
 
-        elo_diffs_test[i] = dyn_elo_diff
+        elo_diffs_test[i] = feat_elo_diff
         ent_a_test[i]     = float(pt[hmm.n_states + 1])
         ent_b_test[i]     = float(po[hmm.n_states + 1])
         is_ko_test[i]     = is_ko
@@ -575,6 +595,11 @@ def main():
 
         # Confidence-gated metrics for GlobalGHMM+Draw
         conf_metrics = _metrics_at_thresholds(ghmm_blend, outcomes)
+
+        if os.environ.get("DUMP_PROBS"):
+            np.savez(Path(os.environ["DUMP_PROBS"]) / f"{tag}.npz",
+                     outcomes=outcomes, ghmm=ghmm_blend, elo=elo_probs,
+                     xgb=xgb_probs, rf=rf_probs)
 
         all_results[tag] = {
             "label":       label,
