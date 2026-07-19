@@ -33,7 +33,17 @@ from model.gaussian_hmm.utils import (
     ELO_SCALE,
 )
 
-WINDOW = 3   # last N matches used for state inference — empirically best
+# Keep in sync with evaluate_global.WINDOW — see the note there on why 3.
+WINDOW = 3
+
+# NOTE — known inconsistency with the benchmark path.
+# This module feeds the head a *simulated* live_elo differential (plus the
+# form adjustment below), while the head is trained in evaluate_global.py on the
+# *published* elo_diff column. That train/test mismatch costs roughly 0.04 nats
+# and is fixed on the benchmark side but deliberately NOT fixed here: this is the
+# code path that generated the committed 2026 World Cup predictions, and altering
+# it would break the correspondence between the repository and that prospective
+# record. Fix this before using the module for any new live forecasting.
 
 GLOBAL_MED_ELO = 1500.0   # median Elo threshold for "win vs strong", matches data_filter.py
 

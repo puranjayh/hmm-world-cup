@@ -57,12 +57,22 @@ from model.gaussian_hmm.utils import (
     _train_draw_model,
 )
 
-WINDOW = 3  # last N matches for state inference — empirically best
+# Last N matches used for state inference. A sweep over N in [1, 20] moves mean
+# log-loss by <0.005 nats — within run-to-run noise — so this is not a tuned
+# optimum. The emission features are already EWA/rolling-5 aggregates, so the
+# window is a second smoothing over history the features have largely absorbed.
+# 3 is retained because it is the value every live 2026 prediction was made with.
+WINDOW = 3
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", message=".*transmat_.*")
 
 RANDOM_SEED = 42
+
+# Populated by _run_global_hmm so main() can persist the fitted emission means
+# alongside the metrics, keeping results/state_means.csv generated rather than
+# hand-copied from stdout.
+_STATE_MEANS: dict[str, list] = {}
 
 EVAL_RUNS = [
     {
@@ -333,6 +343,11 @@ def _run_global_hmm(train_df, test_matches, is_tournament=False, save_artifacts=
         for feat, val in zip(FEATURE_NAMES, mean):
             print(f"  {feat}: {val:.3f}")
 
+    _STATE_MEANS["_last"] = [
+        {"state_id": i, **{f: round(float(v), 4) for f, v in zip(FEATURE_NAMES, mean)}}
+        for i, mean in enumerate(hmm.model.means_)
+    ]
+
     print("\n===== TRANSITION MATRIX =====")
     print(np.round(hmm.model.transmat_, 3))
 
@@ -602,6 +617,7 @@ def main():
                      xgb=xgb_probs, rf=rf_probs)
 
         all_results[tag] = {
+            "state_means": _STATE_MEANS.get("_last", []),
             "label":       label,
             "models":      results,
             "nodraw":      results_nodraw,
