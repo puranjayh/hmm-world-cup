@@ -100,9 +100,11 @@ data/raw/
 ├── all_matches.csv       # international results, 1872–2026
 └── eloratings.csv        # historical Elo ratings
 
-scripts/make_results.py   # regenerates every results CSV from the metrics JSON
+scripts/
+├── make_results.py       # regenerates results/*.csv from the metrics JSON
+└── window_ablation.py    # sweeps WINDOW, writes results/window_ablation.csv
 Live Test/Predictions.csv # prospective 2026 World Cup forecast log
-results/                  # generated benchmark tables
+results/                  # generated benchmark tables (main, gating, states, ablation)
 ```
 
 ---
@@ -144,9 +146,10 @@ between the repository and that record. **Fix it before any new live forecasting
 **The evaluation is small.** 227 matches across four tournaments. Differences below
 roughly 0.02 nats are not resolvable at this sample size.
 
-**The lookback window is not tuned.** Sweeping N over [1, 20] moves mean log-loss by
-less than 0.005 nats. `WINDOW = 3` is retained because it is the value the live 2026
-predictions used, not because it is optimal.
+**The lookback window is not tuned.** Sweeping N over [1, 20]
+(`python scripts/window_ablation.py`, see `results/window_ablation.csv`) moves mean
+log-loss by under 0.01 nats — within run-to-run scale. `WINDOW = 3` is retained
+because it is the value the live 2026 predictions used, not because it is optimal.
 
 **Dataset cutoff is 2008-01-01.** Earlier iterations used a 2002 cutoff; that variant
 is a one-line change in `data_filter.py` and produces a larger training set.

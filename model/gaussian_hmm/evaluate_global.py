@@ -58,11 +58,13 @@ from model.gaussian_hmm.utils import (
 )
 
 # Last N matches used for state inference. A sweep over N in [1, 20] moves mean
-# log-loss by <0.005 nats — within run-to-run noise — so this is not a tuned
-# optimum. The emission features are already EWA/rolling-5 aggregates, so the
-# window is a second smoothing over history the features have largely absorbed.
-# 3 is retained because it is the value every live 2026 prediction was made with.
-WINDOW = 3
+# log-loss by <0.01 nats (see scripts/window_ablation.py and results/
+# window_ablation.csv), so this is not a tuned optimum. The emission features are
+# already EWA/rolling-5 aggregates, so the window is a second smoothing over
+# history the features have largely absorbed. 3 is retained because it is the
+# value every live 2026 prediction was made with; override with WINDOW=<n> to
+# reproduce the ablation.
+WINDOW = int(os.environ.get("WINDOW", "3"))
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", message=".*transmat_.*")
