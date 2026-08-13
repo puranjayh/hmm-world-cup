@@ -1,0 +1,65 @@
+﻿S No,Team,Opponent,,Predicted Win,Predicted Draw,Predicted Loss,Result,Accurate,Accurate (W/L),,Predicted Win (v2),Predicted Draw (v2),Predicted Loss (v2),Accurate (v2),Accurate W/L (v2),,Elo Higher Team,Elo Accurate
+1,Russia,Saudi Arabia,,47.6,26.3,26.1,Russia,1,1,,47.7,26.2,26.1,1,1,,Russia,1
+2,Egypt,Uruguay,,13.3,18.1,68.7,Uruguay,1,1,,13.3,17.9,68.8,1,1,,Uruguay,1
+3,Iran,Morocco,,46.2,25.8,27.9,Iran,1,1,,46.3,25.8,27.9,1,1,,Iran,1
+4,Portugal,Spain,,29.3,26.0,44.7,Draw,0,,,29.2,26.2,44.6,0,,,Spain,
+5,Argentina,Iceland,,57.9,23.3,18.8,Draw,0,,,58.1,23.1,18.8,0,,,Argentina,
+6,Australia,France,,15.0,23.1,61.8,France,1,1,,15.1,22.9,62.1,1,1,,France,1
+7,Croatia,Nigeria,,51.2,26.8,21.9,Croatia,1,1,,51.3,26.7,22.0,1,1,,Croatia,1
+8,Denmark,Peru,,27.9,29.7,42.3,Denmark,0,0,,27.9,29.9,42.2,0,0,,Peru,0
+9,Brazil,Switzerland,,61.6,22.0,16.4,Draw,0,,,61.8,21.7,16.4,0,,,Brazil,
+10,Costa Rica,Serbia,,34.3,29.7,36.0,Serbia,1,1,,34.1,30.1,35.8,1,1,,Serbia,1
+11,Germany,Mexico,,55.3,22.4,22.3,Mexico,0,0,,55.5,22.1,22.4,0,0,,Germany,0
+12,Belgium,Panama,,64.2,22.9,12.9,Belgium,1,1,,64.5,22.6,12.9,1,1,,Belgium,1
+13,England,Tunisia,,63.8,24.1,12.1,England,1,1,,64.1,23.8,12.2,1,1,,England,1
+14,South Korea,Sweden,,30.2,27.7,42.1,Sweden,1,1,,30.1,27.8,42.1,1,1,,Sweden,1
+15,Colombia,Japan,,68.8,18.1,13.0,Japan,0,0,,69.0,18.0,13.1,0,0,,Colombia,0
+16,Egypt,Russia,,32.6,22.7,44.7,Russia,1,1,,32.6,22.7,44.7,1,1,,Russia,1
+17,Poland,Senegal,,46.8,24.4,28.7,Senegal,0,0,,46.9,24.4,28.7,0,0,,Poland,0
+18,Iran,Spain,,14.8,23.2,62.0,Spain,1,1,,14.8,23.0,62.2,1,1,,Spain,1
+19,Morocco,Portugal,,12.5,20.0,67.5,Portugal,1,1,,12.5,19.7,67.8,1,1,,Portugal,1
+20,Saudi Arabia,Uruguay,,10.3,22.5,67.3,Uruguay,1,1,,10.3,22.2,67.5,1,1,,Uruguay,1
+21,Argentina,Croatia,,51.8,26.9,21.3,Croatia,0,0,,51.9,26.8,21.3,0,0,,Argentina,0
+22,Australia,Denmark,,24.3,26.2,49.4,Draw,0,,,24.4,26.1,49.5,0,,,Denmark,
+23,France,Peru,,49.4,24.9,25.8,France,1,1,,49.4,24.7,25.8,1,1,,France,1
+24,Brazil,Costa Rica,,70.4,21.9,7.8,Brazil,1,1,,70.7,21.5,7.8,1,1,,Brazil,1
+25,Iceland,Nigeria,,48.5,23.9,27.5,Nigeria,0,0,,48.6,23.8,27.6,0,0,,Iceland,0
+26,Serbia,Switzerland,,26.2,26.4,47.3,Switzerland,1,1,,26.3,26.4,47.4,1,1,,Switzerland,1
+27,Belgium,Tunisia,,62.4,25.2,12.4,Belgium,1,1,,62.7,24.9,12.5,1,1,,Belgium,1
+28,Germany,Sweden,,59.8,24.7,15.5,Germany,1,1,,60.0,24.4,15.6,1,1,,Germany,1
+29,Mexico,South Korea,,53.7,24.6,21.7,Mexico,1,1,,53.8,24.4,21.8,1,1,,Mexico,1
+30,Colombia,Poland,,45.2,27.7,27.1,Colombia,1,1,,45.2,27.7,27.1,1,1,,Colombia,1
+31,England,Panama,,65.9,22.3,11.8,England,1,1,,66.1,22.0,11.9,1,1,,England,1
+32,Japan,Senegal,,32.8,24.9,42.3,Draw,0,,,32.7,25.0,42.3,0,,,Senegal,
+33,Egypt,Saudi Arabia,,43.5,27.9,28.6,Saudi Arabia,0,0,,43.5,27.9,28.6,0,0,,Egypt,0
+34,Iran,Portugal,,18.6,27.3,54.2,Draw,0,,,18.6,27.1,54.3,0,,,Portugal,
+35,Morocco,Spain,,10.3,21.3,68.3,Draw,0,,,10.4,21.0,68.6,0,,,Spain,
+36,Russia,Uruguay,,19.7,29.9,50.5,Uruguay,1,1,,19.7,29.8,50.5,1,1,,Uruguay,1
+37,Argentina,Nigeria,,60.1,17.8,22.1,Argentina,1,1,,60.2,17.7,22.1,1,1,,Argentina,1
+38,Australia,Peru,,22.1,27.7,50.2,Peru,1,1,,22.1,27.6,50.3,1,1,,Peru,1
+39,Croatia,Iceland,,56.6,21.5,22.0,Croatia,1,1,,56.7,21.4,22.0,1,1,,Croatia,1
+40,Denmark,France,,23.4,24.5,52.1,Draw,0,,,23.5,24.3,52.2,0,,,France,
+41,Brazil,Serbia,,70.4,18.9,10.7,Brazil,1,1,,70.6,18.6,10.8,1,1,,Brazil,1
+42,Costa Rica,Switzerland,,19.1,26.0,54.9,Draw,0,,,19.1,25.8,55.1,0,,,Switzerland,
+43,Germany,South Korea,,72.3,17.6,10.1,South Korea,0,0,,72.5,17.4,10.1,0,0,,Germany,0
+44,Mexico,Sweden,,45.6,26.7,27.7,Sweden,0,0,,45.6,26.7,27.7,0,0,,Mexico,0
+45,Belgium,England,,38.0,21.9,40.1,Belgium,0,0,,37.9,22.1,40.0,0,0,,England,0
+46,Colombia,Senegal,,49.6,27.9,22.6,Colombia,1,1,,49.7,27.7,22.6,1,1,,Colombia,1
+47,Japan,Poland,,29.0,28.4,42.6,Poland,1,1,,28.9,28.5,42.6,1,1,,Poland,1
+48,Panama,Tunisia,,38.3,24.6,37.0,Tunisia,0,0,,38.2,24.9,36.9,0,0,,Panama,0
+49,Argentina,France,,33.1,27.6,39.4,France,1,1,,33.0,27.8,39.2,1,1,,France,1
+50,Portugal,Uruguay,,48.7,24.7,26.5,Uruguay,0,0,,48.8,24.6,26.6,0,0,,Portugal,0
+51,Croatia,Denmark,,39.4,28.3,32.3,Draw,0,,,39.3,28.6,32.1,0,,,Croatia,
+52,Russia,Spain,,11.7,22.0,66.4,Draw,0,,,11.7,21.6,66.6,0,,,Spain,
+53,Belgium,Japan,,61.0,22.7,16.3,Belgium,1,1,,61.2,22.4,16.4,1,1,,Belgium,1
+54,Brazil,Mexico,,62.1,21.9,16.0,Brazil,1,1,,62.3,21.7,16.0,1,1,,Brazil,1
+55,Colombia,England,,36.8,26.4,36.8,Draw,0,,,36.6,26.8,36.6,0,,,England,
+56,Sweden,Switzerland,,27.0,27.8,45.2,Sweden,0,0,,27.0,27.8,45.2,0,0,,Switzerland,0
+57,Belgium,Brazil,,22.6,20.0,57.4,Belgium,0,0,,22.7,19.8,57.5,0,0,,Brazil,0
+58,France,Uruguay,,48.7,24.5,26.7,France,1,1,,48.8,24.4,26.8,1,1,,France,1
+59,Croatia,Russia,,52.4,24.0,23.6,Draw,0,,,52.5,23.8,23.7,0,,,Croatia,
+60,England,Sweden,,46.2,25.3,28.5,England,1,1,,46.3,25.2,28.6,1,1,,England,1
+61,Belgium,France,,32.2,25.4,42.4,France,1,1,,32.1,25.5,42.4,1,1,,France,1
+62,Croatia,England,,30.3,25.8,43.8,Croatia,0,0,,30.3,25.8,43.8,0,0,,England,0
+63,Belgium,England,,40.8,25.6,33.6,Belgium,1,1,,40.7,25.7,33.5,1,1,,Belgium,1
+64,Croatia,France,,24.6,25.0,50.5,France,1,1,,24.6,24.8,50.6,1,1,,France,1

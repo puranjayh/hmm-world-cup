@@ -1,0 +1,49 @@
+tag,tournament,subset,model,n,accuracy,ci_lo,ci_hi,vs_model,ref_only_correct,other_only_correct,n_discordant,mcnemar_p,n_bootstrap,window,elo_mode,reproducible,commit,generated_utc
+wc_2018,2018 World Cup,W/D/L,GlobalGHMM,64,0.5625,0.4375,0.6875,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/L Only,GlobalGHMM,51,0.7059,0.5882,0.8235,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/D/L,GlobalGHMM+Draw,64,0.5625,0.4375,0.6875,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/L Only,GlobalGHMM+Draw,51,0.7059,0.5882,0.8235,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/D/L,XGBoost,64,0.5781,0.4531,0.7031,GlobalGHMM+Draw,1.0,2.0,3.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/L Only,XGBoost,51,0.7255,0.5882,0.8431,GlobalGHMM+Draw,1.0,2.0,3.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/D/L,Random Forest,64,0.5469,0.4219,0.6719,GlobalGHMM+Draw,6.0,5.0,11.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/L Only,Random Forest,51,0.7059,0.5686,0.8235,GlobalGHMM+Draw,3.0,3.0,6.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/D/L,Elo,64,0.5625,0.4375,0.6875,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/L Only,Elo,51,0.7059,0.5882,0.8235,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/D/L,Uniform,64,0.3906,0.2812,0.5156,GlobalGHMM+Draw,21.0,10.0,31.0,0.0708,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,W/L Only,Uniform,51,0.4902,0.3529,0.6275,GlobalGHMM+Draw,21.0,10.0,31.0,0.0708,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/D/L,GlobalGHMM,64,0.5469,0.4219,0.6719,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/L Only,GlobalGHMM,49,0.7143,0.5918,0.8367,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/D/L,GlobalGHMM+Draw,64,0.5469,0.4219,0.6719,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/L Only,GlobalGHMM+Draw,49,0.7143,0.5918,0.8367,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/D/L,XGBoost,64,0.5469,0.4219,0.6719,GlobalGHMM+Draw,1.0,1.0,2.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/L Only,XGBoost,49,0.7143,0.5918,0.8367,GlobalGHMM+Draw,1.0,1.0,2.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/D/L,Random Forest,64,0.4688,0.3438,0.5938,GlobalGHMM+Draw,7.0,2.0,9.0,0.1797,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/L Only,Random Forest,49,0.6327,0.4898,0.7551,GlobalGHMM+Draw,5.0,1.0,6.0,0.2188,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/D/L,Elo,64,0.5469,0.4219,0.6719,GlobalGHMM+Draw,1.0,1.0,2.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/L Only,Elo,49,0.7143,0.5918,0.8367,GlobalGHMM+Draw,1.0,1.0,2.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/D/L,Uniform,64,0.3125,0.2031,0.4219,GlobalGHMM+Draw,23.0,8.0,31.0,0.0107,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,W/L Only,Uniform,49,0.4082,0.2653,0.551,GlobalGHMM+Draw,23.0,8.0,31.0,0.0107,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/D/L,GlobalGHMM,51,0.5294,0.3922,0.6667,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/L Only,GlobalGHMM,34,0.7941,0.6471,0.9118,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/D/L,GlobalGHMM+Draw,51,0.5294,0.3922,0.6667,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/L Only,GlobalGHMM+Draw,34,0.7941,0.6471,0.9118,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/D/L,XGBoost,51,0.4902,0.3529,0.6275,GlobalGHMM+Draw,2.0,0.0,2.0,0.5,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/L Only,XGBoost,34,0.7353,0.5882,0.8824,GlobalGHMM+Draw,2.0,0.0,2.0,0.5,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/D/L,Random Forest,51,0.4706,0.3333,0.6078,GlobalGHMM+Draw,4.0,1.0,5.0,0.375,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/L Only,Random Forest,34,0.7059,0.5588,0.8529,GlobalGHMM+Draw,4.0,1.0,5.0,0.375,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/D/L,Elo,51,0.5098,0.3725,0.6471,GlobalGHMM+Draw,2.0,1.0,3.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/L Only,Elo,34,0.7647,0.6176,0.9118,GlobalGHMM+Draw,2.0,1.0,3.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/D/L,Uniform,51,0.3725,0.2353,0.5098,GlobalGHMM+Draw,12.0,4.0,16.0,0.0768,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,W/L Only,Uniform,34,0.5588,0.3824,0.7353,GlobalGHMM+Draw,12.0,4.0,16.0,0.0768,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/D/L,GlobalGHMM,32,0.5938,0.4375,0.75,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/L Only,GlobalGHMM,23,0.8261,0.6522,0.9565,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/D/L,GlobalGHMM+Draw,32,0.5938,0.4375,0.75,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/L Only,GlobalGHMM+Draw,23,0.8261,0.6522,0.9565,,,,,,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/D/L,XGBoost,32,0.5938,0.4375,0.75,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/L Only,XGBoost,23,0.8261,0.6522,0.9565,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/D/L,Random Forest,32,0.5938,0.4375,0.75,GlobalGHMM+Draw,1.0,1.0,2.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/L Only,Random Forest,23,0.8261,0.6522,0.9565,GlobalGHMM+Draw,1.0,1.0,2.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/D/L,Elo,32,0.5938,0.4375,0.75,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/L Only,Elo,23,0.8261,0.6522,0.9565,GlobalGHMM+Draw,0.0,0.0,0.0,1.0,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/D/L,Uniform,32,0.2812,0.125,0.4375,GlobalGHMM+Draw,12.0,2.0,14.0,0.0129,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,W/L Only,Uniform,23,0.3913,0.2174,0.6087,GlobalGHMM+Draw,12.0,2.0,14.0,0.0129,20000,3,dynamic,True,cab4111-dirty,2026-08-13T09:28:59+00:00

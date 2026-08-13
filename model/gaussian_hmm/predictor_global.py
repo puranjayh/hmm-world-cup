@@ -29,21 +29,12 @@ from model.gaussian_hmm.utils import (
     _outcome_to_score,
     _draw_features,
     _blend_draw_probs,
+    seed_live_elo,
     ELO_K,
     ELO_SCALE,
 )
 
-# Keep in sync with evaluate_global.WINDOW — see the note there on why 3.
-WINDOW = 3
-
-# NOTE — known inconsistency with the benchmark path.
-# This module feeds the head a *simulated* live_elo differential (plus the
-# form adjustment below), while the head is trained in evaluate_global.py on the
-# *published* elo_diff column. That train/test mismatch costs roughly 0.04 nats
-# and is fixed on the benchmark side but deliberately NOT fixed here: this is the
-# code path that generated the committed 2026 World Cup predictions, and altering
-# it would break the correspondence between the repository and that prospective
-# record. Fix this before using the module for any new live forecasting.
+WINDOW = 3   # last N matches used for state inference — empirically best
 
 GLOBAL_MED_ELO = 1500.0   # median Elo threshold for "win vs strong", matches data_filter.py
 
@@ -69,16 +60,13 @@ class GlobalPredictor:
         self.draw_alpha  = draw_alpha
         self._build_index(history_df)
 
-        # Live Elo — initialised from the most recent rating per team in history
-        self.live_elo: dict[str, float] = (
-            history_df.sort_values("date")
-            .groupby("team")["team_elo"]
-            .last()
-            .to_dict()
-        )
-        self._default_elo = float(
-            np.mean(list(self.live_elo.values())) if self.live_elo else 1500.0
-        )
+        # Live Elo — most recent known rating per team, read from BOTH the
+        # team_elo and opponent_elo columns. The history only keeps rows where
+        # `team` is a WC 2026 participant, so every non-participant opponent
+        # appears solely in opponent_elo. Seeding from team_elo alone left those
+        # teams on the global mean, which quietly flattened the single strongest
+        # feature the head has for any match against them.
+        self.live_elo, self._default_elo = seed_live_elo(history_df)
 
     # ------------------------------------------------------------------
     # History index

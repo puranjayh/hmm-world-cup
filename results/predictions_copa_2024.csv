@@ -1,0 +1,33 @@
+﻿S No,Team,Opponent,,Predicted Win,Predicted Draw,Predicted Loss,Result,Accurate,Accurate (W/L),,Predicted Win (v2),Predicted Draw (v2),Predicted Loss (v2),Accurate (v2),Accurate W/L (v2),,Elo Higher Team,Elo Accurate
+1,Argentina,Canada,,85.4,8.0,6.6,Argentina,1,1,,84.8,8.6,6.6,1,1,,Argentina,1
+2,Chile,Peru,,35.3,13.4,51.3,Draw,0,,,35.2,13.5,51.3,0,,,Peru,
+3,Ecuador,Venezuela,,61.7,12.2,26.1,Venezuela,0,0,,61.6,12.4,26.1,0,0,,Ecuador,0
+4,Jamaica,Mexico,,20.7,11.8,67.5,Mexico,1,1,,20.7,11.9,67.4,1,1,,Mexico,1
+5,Bolivia,USA,,21.6,11.6,66.8,USA,1,1,,21.6,11.7,66.7,1,1,,USA,1
+6,Panama,Uruguay,,23.4,12.1,64.5,Uruguay,1,1,,23.4,12.2,64.4,1,1,,Uruguay,1
+7,Brazil,Costa Rica,,81.3,8.8,9.9,Draw,0,,,80.9,9.3,9.8,0,,,Brazil,
+8,Colombia,Paraguay,,75.3,9.8,14.9,Colombia,1,1,,75.0,10.1,14.8,1,1,,Colombia,1
+9,Argentina,Chile,,85.8,7.7,6.5,Argentina,1,1,,85.2,8.3,6.4,1,1,,Argentina,1
+10,Canada,Peru,,32.8,12.9,54.3,Canada,0,0,,32.8,13.0,54.2,0,0,,Peru,0
+11,Ecuador,Jamaica,,72.6,10.8,16.6,Ecuador,1,1,,72.4,11.1,16.5,1,1,,Ecuador,1
+12,Mexico,Venezuela,,54.7,11.7,33.6,Venezuela,0,0,,54.6,12.0,33.5,0,0,,Mexico,0
+13,Bolivia,Uruguay,,9.8,7.4,82.9,Uruguay,1,1,,9.7,8.0,82.3,1,1,,Uruguay,1
+14,Panama,USA,,36.4,13.6,50.0,Panama,0,0,,36.4,13.6,49.9,0,0,,USA,0
+15,Brazil,Paraguay,,83.6,7.7,8.7,Brazil,1,1,,83.0,8.3,8.7,1,1,,Brazil,1
+16,Colombia,Costa Rica,,72.2,11.0,16.8,Colombia,1,1,,72.0,11.2,16.7,1,1,,Colombia,1
+17,Argentina,Peru,,84.1,8.2,7.6,Argentina,1,1,,83.6,8.8,7.6,1,1,,Argentina,1
+18,Canada,Chile,,40.3,12.6,47.1,Draw,0,,,40.2,12.8,47.0,0,,,Canada,
+19,Ecuador,Mexico,,50.6,13.3,36.2,Draw,0,,,50.5,13.4,36.1,0,,,Ecuador,
+20,Jamaica,Venezuela,,23.6,12.5,63.9,Venezuela,1,1,,23.6,12.6,63.8,1,1,,Venezuela,1
+21,Bolivia,Panama,,21.7,10.5,67.8,Panama,1,1,,21.7,10.8,67.6,1,1,,Panama,1
+22,USA,Uruguay,,24.9,12.6,62.5,Uruguay,1,1,,24.9,12.7,62.4,1,1,,Uruguay,1
+23,Brazil,Colombia,,53.9,13.2,32.9,Draw,0,,,53.8,13.3,32.9,0,,,Brazil,
+24,Costa Rica,Paraguay,,49.3,12.9,37.8,Costa Rica,1,1,,49.2,13.0,37.7,1,1,,Costa Rica,1
+25,Argentina,Ecuador,,78.6,9.7,11.7,Draw,0,,,78.3,10.0,11.7,0,,,Argentina,
+26,Canada,Venezuela,,35.1,12.9,51.9,Draw,0,,,35.1,13.1,51.9,0,,,Venezuela,
+27,Brazil,Uruguay,,58.9,13.1,28.0,Draw,0,,,58.8,13.2,28.0,0,,,Brazil,
+28,Colombia,Panama,,71.1,11.3,17.6,Colombia,1,1,,70.9,11.6,17.5,1,1,,Colombia,1
+29,Argentina,Canada,,86.1,7.5,6.4,Argentina,1,1,,85.6,8.1,6.3,1,1,,Argentina,1
+30,Colombia,Uruguay,,46.3,13.4,40.3,Colombia,1,1,,46.3,13.5,40.2,1,1,,Colombia,1
+31,Canada,Uruguay,,20.2,12.4,67.5,Draw,0,,,20.2,12.5,67.4,0,,,Uruguay,
+32,Argentina,Colombia,,64.6,12.0,23.4,Argentina,1,1,,64.5,12.2,23.3,1,1,,Argentina,1

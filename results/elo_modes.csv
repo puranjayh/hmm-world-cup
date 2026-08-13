@@ -1,0 +1,17 @@
+tag,tournament,elo_regime,is_primary,model,n,log_loss,brier,accuracy,rps,window,reproducible,commit,generated_utc
+wc_2018,2018 World Cup,dynamic,True,GlobalGHMM,64,0.967,0.5758,0.5625,0.2063,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,dynamic,True,GlobalGHMM+Draw,64,0.9669,0.5757,0.5625,0.2063,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,published,False,GlobalGHMM,64,0.9682,0.576,0.5469,0.2068,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2018,2018 World Cup,published,False,GlobalGHMM+Draw,64,0.968,0.5758,0.5469,0.2067,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,dynamic,True,GlobalGHMM,64,1.0557,0.608,0.5469,0.2174,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,dynamic,True,GlobalGHMM+Draw,64,1.055,0.6076,0.5469,0.2173,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,published,False,GlobalGHMM,64,1.0391,0.5976,0.5625,0.2126,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+wc_2022,2022 World Cup,published,False,GlobalGHMM+Draw,64,1.0385,0.5973,0.5625,0.2126,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,dynamic,True,GlobalGHMM,51,1.0374,0.616,0.5294,0.1956,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,dynamic,True,GlobalGHMM+Draw,51,1.0375,0.6162,0.5294,0.1956,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,published,False,GlobalGHMM,51,1.0357,0.6163,0.5098,0.1959,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+euro_2024,UEFA Euro 2024,published,False,GlobalGHMM+Draw,51,1.0359,0.6166,0.5098,0.196,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,dynamic,True,GlobalGHMM,32,0.9483,0.5346,0.5938,0.1544,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,dynamic,True,GlobalGHMM+Draw,32,0.9457,0.534,0.5938,0.1543,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,published,False,GlobalGHMM,32,0.9429,0.5315,0.5938,0.153,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00
+copa_2024,Copa América 2024,published,False,GlobalGHMM+Draw,32,0.9405,0.5309,0.5938,0.153,3,True,cab4111-dirty,2026-08-13T09:28:59+00:00

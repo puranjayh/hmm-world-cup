@@ -43,7 +43,10 @@ import random
 import sys
 import warnings
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from model.gaussian_hmm.predictor_global import GlobalPredictor
 
 # Ensure the project package root (parent of the top-level `model` package) is
 # importable so absolute imports like `model.gaussian_hmm.predictor_global`
@@ -83,22 +86,36 @@ STATE_FILE    = ARTIFACTS_DIR / "wc2026_state.json"  # live checkpoint
 
 # ---------------------------------------------------------------------------
 # 2026 World Cup draw
-# Full 48-team, 12-group draw as announced by FIFA.
-# Source: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/
+#
+# Derived from the real group-stage fixture list — the first 72 rows of
+# `Live Test 2026 WC/Predictions and Results.csv` — rather than transcribed by
+# hand. Each group falls out as a connected component of the fixture graph, and
+# all twelve verify as complete 4-team round robins (4 teams, 6 matches each).
+# The 48 teams are exactly `data_filter.WC2026_TEAMS`.
+#
+# The GROUP LETTERS are inferred from the order fixtures appear in that file, so
+# they are internally consistent but need not match FIFA's official lettering.
+# Only the group *composition* is authoritative. Team names use the dataset's
+# spellings (Turkey, Cape Verde, Bosnia and Herzegovina, Curaçao), not the CSV's.
+#
+# This replaces a hard-coded draw that predated the real one and was fictional:
+# it contained 14 teams that never qualified (Italy, Serbia, Denmark, Ukraine,
+# Nigeria, Chile, Peru, Venezuela, Bolivia, Costa Rica, Guatemala, Cameroon,
+# Albania, Kyrgyzstan), so every simulation built on it was meaningless.
 # ---------------------------------------------------------------------------
 GROUPS: dict[str, list[str]] = {
-    "A": ["Mexico",       "USA",          "Canada",        "Colombia"],
-    "B": ["Ecuador",      "Uruguay",      "Panama",        "Bolivia"],
-    "C": ["Argentina",    "Chile",        "Peru",          "Venezuela"],
-    "D": ["Brazil",       "Paraguay",     "Costa Rica",    "Guatemala"],
-    "E": ["France",       "Belgium",      "England",       "Serbia"],
-    "F": ["Portugal",     "Spain",        "Turkey",        "Ukraine"],
-    "G": ["Germany",      "Netherlands",  "Denmark",       "Cameroon"],
-    "H": ["Italy",        "Croatia",      "Switzerland",   "Albania"],
-    "I": ["Morocco",      "Senegal",      "South Africa",  "Tunisia"],
-    "J": ["Nigeria",      "Egypt",        "Algeria",       "Ivory Coast"],
-    "K": ["Japan",        "South Korea",  "Australia",     "Saudi Arabia"],
-    "L": ["Iran",         "Uzbekistan",   "Qatar",         "Kyrgyzstan"],
+    "A": ["Mexico",     "South Africa",           "South Korea",  "Czechia"],
+    "B": ["Canada",     "Bosnia and Herzegovina", "Switzerland",  "Qatar"],
+    "C": ["USA",        "Paraguay",               "Australia",    "Turkey"],
+    "D": ["Brazil",     "Morocco",                "Haiti",        "Scotland"],
+    "E": ["Germany",    "Curaçao",                "Ivory Coast",  "Ecuador"],
+    "F": ["Netherlands","Japan",                  "Sweden",       "Tunisia"],
+    "G": ["Spain",      "Cape Verde",             "Saudi Arabia", "Uruguay"],
+    "H": ["Belgium",    "Egypt",                  "Iran",         "New Zealand"],
+    "I": ["France",     "Senegal",                "Iraq",         "Norway"],
+    "J": ["Argentina",  "Algeria",                "Austria",      "Jordan"],
+    "K": ["Portugal",   "DR Congo",               "Uzbekistan",   "Colombia"],
+    "L": ["England",    "Croatia",                "Ghana",        "Panama"],
 }
 
 # Each group plays a round-robin (6 matches per group).
@@ -146,7 +163,7 @@ KNOCKOUT_DATES = {
 # Model loading
 # ---------------------------------------------------------------------------
 
-def load_predictor() -> "GlobalPredictor":
+def load_predictor() -> GlobalPredictor:
     """Load the trained HMM, head, and (optionally) draw model from disk."""
     from model.gaussian_hmm.predictor_global import GlobalPredictor
 
@@ -349,7 +366,7 @@ def _simulate_once(
                     team=home, opponent=away,
                     as_of_date=date, tournament="FIFA World Cup",
                 )
-                hg, ag = _sample_scoreline(pred["Win"], pred["Draw"], pred["Loss"])
+                hg, ag = _sample_scoreline(pred["Win"], pred["Draw"])
                 outcome = 2 if hg > ag else (1 if hg == ag else 0)
                 _update_standing(points, gd, gf, home, away, outcome, hg, ag)
                 sim_pred.append_result(home, away, date, outcome)
